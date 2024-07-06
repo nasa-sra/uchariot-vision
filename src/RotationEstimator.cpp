@@ -36,8 +36,8 @@ void RotationEstimator::ProcessAccel(rs2_vector accel_data) {
     RSVector3 accel_angle;
 
     // Calculate rotation angle from accelerometer data
-    accel_angle.z = atan2(accel_data.y, accel_data.z);
-    accel_angle.x = atan2(accel_data.x, sqrt(accel_data.y * accel_data.y + accel_data.z * accel_data.z));
+    accel_angle.z = std::atan2(accel_data.y, accel_data.z);
+    accel_angle.x = std::atan2(accel_data.x, sqrt(accel_data.y * accel_data.y + accel_data.z * accel_data.z));
 
     // If it is the first iteration, set initial pose of camera according to accelerometer data (note the different handling for Y axis)
     std::lock_guard<std::mutex> lock(theta_mtx);
