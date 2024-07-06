@@ -1,0 +1,12 @@
+/build
+/pibuild
+/.vscode
+/.idea
+**/__pycache__/
+/cmake-build-debug/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+compile_commands.json
+.DS_Store
