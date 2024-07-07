@@ -1,7 +1,5 @@
 #include "RotationEstimator.h"
 
-// Provided by Realsense SDK
-// https://github.com/IntelRealSense/librealsense/blob/e1688cc318457f7dd57abcdbedd3398062db3009/examples/motion/rs-motion.cpp#L126
 void RotationEstimator::ProcessGyro(rs2_vector gyro_data, double ts) {
     // On the first iteration, use only data from accelerometer to set the camera's initial position
     if (firstGyro) { 
@@ -10,7 +8,7 @@ void RotationEstimator::ProcessGyro(rs2_vector gyro_data, double ts) {
         return;
     }
     // Holds the change in angle, as calculated from gyro
-    RSVector3 gyro_angle;
+    IMU_Vector gyro_angle;
 
     // Initialize gyro_angle with data from gyro
     gyro_angle.x = gyro_data.x; // Pitch
@@ -29,11 +27,9 @@ void RotationEstimator::ProcessGyro(rs2_vector gyro_data, double ts) {
     theta.add(-gyro_angle.z, -gyro_angle.y, gyro_angle.x);
 }
 
-// Provided by Realsense SDK
-// https://github.com/IntelRealSense/librealsense/blob/e1688cc318457f7dd57abcdbedd3398062db3009/examples/motion/rs-motion.cpp#L154
 void RotationEstimator::ProcessAccel(rs2_vector accel_data) {
     // Holds the angle as calculated from accelerometer data
-    RSVector3 accel_angle;
+    IMU_Vector accel_angle;
 
     // Calculate rotation angle from accelerometer data
     accel_angle.z = std::atan2(accel_data.y, accel_data.z);
