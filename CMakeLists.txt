@@ -9,7 +9,7 @@ set (CMAKE_CXX_STANDARD 17)
 
 add_compile_definitions(LINUX=true)
 
-set(SRCS src/main.cpp src/Utils.cpp src/RotationEstimator.cpp src/Realsense.cpp)
+set(SRCS src/main.cpp src/Utils.cpp src/RotationEstimator.cpp src/Realsense.cpp src/Pipe.cpp)
 
 set(LIBS)
 

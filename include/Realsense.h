@@ -11,12 +11,12 @@ private:
     rs2::pipeline pipe;
     rs2::config cfg;
     rs2::pipeline_profile profile;
+    RotationEstimator algo;
 
 public:
-    RotationEstimator algo;
     static bool IsIMUValid();
-
     Realsense();
     void Update();
     void Stop();
+    inline IMU_Vector GetIMUVector() { return algo.GetTheta(); }
 };
