@@ -15,7 +15,7 @@ struct MsgBuffer {
 }; 
 
 class Pipe {
-
+    const char* name;
     MsgBuffer _msg;
 
 public:

@@ -1,7 +1,7 @@
 #include "Pipe.h"
 
 Pipe::Pipe(const std::string& name) {
-   
+    this->name = name.c_str();
 }
 
 void Pipe::Write(std::string data) {
@@ -9,7 +9,7 @@ void Pipe::Write(std::string data) {
     int msgid; 
 
     // ftok to generate unique key 
-    key = ftok("progfile", 65); 
+    key = ftok(name, 65); 
 
     // msgget creates a message queue 
     // and returns identifier 
@@ -22,5 +22,5 @@ void Pipe::Write(std::string data) {
     msgsnd(msgid, &_msg, sizeof(_msg), 0); 
 
     // display the message 
-    printf("Data send is : %s \n", _msg._content); 
+    // printf("Data send is : %s \n", _msg._content); 
 }
