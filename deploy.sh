@@ -1,1 +1,1 @@
-scp  ./uChariotVision uchariot@10.93.24.9:~/uchariot-vision/build
+scp  ./uChariotVision uchariot@10.93.24.5:~/uchariot-vision/build

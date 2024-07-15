@@ -4,8 +4,7 @@
 #include <unistd.h>
 
 // #define TEST
-// #define VERBOSE
-
+#define VERBOSE
 
 int main(int argc, char** argv) {
 
