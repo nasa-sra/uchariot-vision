@@ -12,14 +12,14 @@ private:
     rs2::config cfg;
     rs2::pipeline_profile profile;
     RotationEstimator algo;
-
+    float obstructionDistance;
 public:
     static bool IsIMUValid();
     Realsense();
-    void Update();
-    float GetObstacleDistance(rs2::frameset frames);
-    void UpdateGyroAccel(rs2::frameset frames);
     void Stop();
+    inline float GetObstructionDistance() {
+        return obstructionDistance;
+    }
     inline IMU_Vector GetIMUVector() {
         return algo.GetTheta();
     }

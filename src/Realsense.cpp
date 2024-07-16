@@ -30,11 +30,6 @@ Realsense::Realsense() {
     cfg.enable_stream(RS2_STREAM_GYRO, RS2_FORMAT_MOTION_XYZ32F);
     cfg.enable_stream(RS2_STREAM_DEPTH, 640, 480, RS2_FORMAT_Z16, 30);
 
-    rs2::colorizer color_map;
-    rs2::frame colorFrame;
-    rs2::frame depthFrame;
-    std::mutex theta_img;
-
     auto callback = [&](const rs2::frame& frame) {
         if (auto fs = frame.as<rs2::frameset>()) {
             // Try to get a frame of a depth image
@@ -44,10 +39,7 @@ Realsense::Realsense() {
             auto height = depth.get_height();
 
             // Query the distance from the camera to the object in the center of the image
-            float dist_to_center = depth.get_distance(width / 2, height / 2);
-
-            // Print the distance
-            std::cout << "The camera is facing an object " << dist_to_center << " meters away \r";
+            obstructionDistance = depth.get_distance(width / 2, height / 2); 
 
         } else if (frame.as<rs2::motion_frame>()) {
             // Cast the frame that arrived to motion frame
@@ -74,39 +66,6 @@ Realsense::Realsense() {
     };
 
     pipe.start(cfg, callback);
-}
-
-void Realsense::Update() {
-    // rs2::frameset frames = pipe.wait_for_frames();
-
-    // float obstacleDistance = GetObstacleDistance(frames);
-    // UpdateGyroAccel(frames);
-}
-
-float Realsense::GetObstacleDistance(rs2::frameset frames) {
-
-    return -1;
-}
-
-void Realsense::UpdateGyroAccel(rs2::frameset frames) {
-    auto motion = frames.as<rs2::motion_frame>();
-    // auto motion = frames.get_
-
-    // If casting succeeded and the arrived frame is from gyro stream
-    if (motion) {
-        std::cout << "getting motion data..." << std::endl;
-        // Get the timestamp of the current frame
-        double ts = motion.get_timestamp();
-        // Get gyro measures
-        rs2_vector gyro_data = motion.get_motion_data();
-        // Call function that computes the angle of motion based on the retrieved measures
-        algo.ProcessGyro(gyro_data, ts);
-
-        // Get accelerometer measures
-        rs2_vector accel_data = motion.get_motion_data();
-        // Call function that computes the angle of motion based on the retrieved measures
-        algo.ProcessAccel(accel_data);
-    }
 }
 
 void Realsense::Stop() {
