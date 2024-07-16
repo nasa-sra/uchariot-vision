@@ -16,9 +16,17 @@ set(LIBS)
 find_package(Eigen3 CONFIG REQUIRED)
 list(APPEND LIBS Eigen3::Eigen)
 
-list(APPEND CMAKE_PREFIX_PATH "/usr/local/lib/cmake/realsense2")
+# list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/Cellar/librealsense/2.55.1")
+# find_package(realsense2 CONFIG REQUIRED)
+
+
+
+set(REALSENSE_DIR "/opt/homebrew/Cellar/librealsense/2.55.1")
 find_package(realsense2 CONFIG REQUIRED)
+include_directories(${SDL2_INCLUDE_DIRS})
+link_directories(${SDL2_LIBDIR})
 list(APPEND LIBS realsense2::realsense2)
+
 
 add_executable(uChariotVision ${SRCS})
 target_link_libraries(uChariotVision ${LIBS})
