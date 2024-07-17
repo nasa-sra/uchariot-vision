@@ -2,6 +2,7 @@
 #include "Pipe.h"
 #include "Utils.h"
 #include <unistd.h>
+#include <thread>
 
 // #define TEST
 #define VERBOSE
@@ -13,11 +14,15 @@ int main(int argc, char** argv) {
 #endif
     Pipe pipe("/tmp/rs_heading");
 
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	
+	cam.TareIMU(cam.GetIMU());
+
     while (1)
     {
 
 #ifndef TEST
-        auto angle = cam.GetIMUVector();
+        auto angle = cam.GetIMU();
 
     #ifdef VERBOSE
         Utils::LogFmt("(%f, %f, %f)", angle.x, angle.y, angle.z);

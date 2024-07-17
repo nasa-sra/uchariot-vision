@@ -12,11 +12,13 @@ private:
     rs2::config cfg;
     rs2::pipeline_profile profile;
     RotationEstimator algo;
+	IMU_Vector tare;
 
 public:
     static bool IsIMUValid();
     Realsense();
     void Update();
     void Stop();
-    inline IMU_Vector GetIMUVector() { return algo.GetTheta(); }
+    inline IMU_Vector GetIMU() { return (algo.GetTheta() - tare).constrained(); }
+	inline void TareIMU(IMU_Vector tare) { this->tare = tare; }
 };

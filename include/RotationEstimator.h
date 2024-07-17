@@ -14,6 +14,7 @@ struct IMU_Vector {
     double x, y, z;
     inline IMU_Vector operator*(double t) { return { x * t, y * t, z * t }; }
     inline IMU_Vector operator-(double t) { return { x - t, y - t, z - t }; }
+    inline IMU_Vector operator-(IMU_Vector v) { return { x - v.x, y - v.y, z - v.z }; }
     inline void operator*=(double t) { x = x * t; y = y * t; z = z * t; }
     inline void operator=(IMU_Vector other) { x = other.x; y = other.y; z = other.z; }
     inline void add(double t1, double t2, double t3) { x += t1; y += t2; z += t3; }
@@ -41,8 +42,6 @@ public:
     // Returns the current rotation angle
     inline IMU_Vector GetTheta() {
         std::lock_guard<std::mutex> lock(theta_mtx);
-        auto t = theta.constrained();
-        t.y = TWO_PI + t.y;
-        return t;
+		return theta;
     }
 };
