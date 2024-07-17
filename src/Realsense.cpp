@@ -8,7 +8,6 @@ bool Realsense::IsIMUValid() {
     rs2::context ctx;
     for (auto dev : ctx.query_devices()) {
         Utils::LogFmt("Realsense device found: %s", dev.get_description().c_str());
-        // The same device should support gyro and accel
         found_gyro = false;
         found_accel = false;
         for (auto sensor : dev.query_sensors()) {
@@ -33,13 +32,17 @@ Realsense::Realsense() {
     auto callback = [&](const rs2::frame& frame) {
         if (auto fs = frame.as<rs2::frameset>()) {
             // Try to get a frame of a depth image
-            rs2::depth_frame depth = fs.get_depth_frame();
+            // colorFrame = fs.get_color_frame();
+
+            rs2::depth_frame depthFrame = fs.get_depth_frame();
+            colorFrame = fs.get_color_frame();
+
             // Get the depth frame's dimensions
-            auto width = depth.get_width();
-            auto height = depth.get_height();
+            auto width = depthFrame.get_width();
+            auto height = depthFrame.get_height();
 
             // Query the distance from the camera to the object in the center of the image
-            obstructionDistance = depth.get_distance(width / 2, height / 2); 
+            obstructionDistance = depthFrame.get_distance(width / 2, height / 2);
 
         } else if (frame.as<rs2::motion_frame>()) {
             // Cast the frame that arrived to motion frame
@@ -66,6 +69,26 @@ Realsense::Realsense() {
     };
 
     pipe.start(cfg, callback);
+}
+
+void Realsense::OpenWindow() {
+    const auto window_name = "Realsense Stream";
+    std::cout << "Creating window thread" << std::endl;
+    cv::namedWindow(window_name, cv::WINDOW_AUTOSIZE);
+
+    while (cv::waitKey(1) < 0 && cv::getWindowProperty(window_name, cv::WND_PROP_AUTOSIZE) >= 0) {
+
+        // Query frame size (width and height)
+        const int w = colorFrame.get_width();
+        const int h = colorFrame.get_height();
+
+        // Create OpenCV matrix of size (w,h) from the colorized depth data
+        cv::Mat image(cv::Size(w, h), CV_8UC3, (void*)colorFrame.get_data(), cv::Mat::AUTO_STEP);
+
+        std::cout << "Attempting to create window..." << std::endl;
+        // Update the window with new data
+        cv::imshow(window_name, image);
+    }
 }
 
 void Realsense::Stop() {

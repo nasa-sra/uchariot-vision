@@ -16,17 +16,17 @@ set(LIBS)
 find_package(Eigen3 CONFIG REQUIRED)
 list(APPEND LIBS Eigen3::Eigen)
 
-# list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/Cellar/librealsense/2.55.1")
-# find_package(realsense2 CONFIG REQUIRED)
-
-
-
 set(REALSENSE_DIR "/opt/homebrew/Cellar/librealsense/2.55.1")
 find_package(realsense2 CONFIG REQUIRED)
-include_directories(${SDL2_INCLUDE_DIRS})
-link_directories(${SDL2_LIBDIR})
 list(APPEND LIBS realsense2::realsense2)
 
+set(OPENCV_DIR "/opt/homebrew/Cellar/opencv/4.10.0")
+find_package(OpenCV REQUIRED)
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+
+# list(APPEND CMAKE_PREFIX_PATH "/usr/local/lib/cmake/opencv4")
+# find_package(OpenCV CONFIG REQUIRED)
+# list(APPEND LIBS ${OpenCV_LIBS})
 
 add_executable(uChariotVision ${SRCS})
 target_link_libraries(uChariotVision ${LIBS})
