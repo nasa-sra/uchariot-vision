@@ -3,19 +3,23 @@
 #include "Utils.h"
 #include <thread>
 #include <unistd.h>
+#include <Tensorflow.h>
 
 std::thread windowThread;
 
 int main(int argc, char** argv) {
 
     Realsense cam;
-    Pipe pipe("/tmp/rs_heading");
+    // Pipe pipe("/tmp/rs_heading");
+
+    Tensorflow.runDetection();
+
+
+    if (argv[1]) {
+        windowThread = std::thread([&cam]() { cam.OpenWindow(); });
+    }
 
     while (1) {
-        if (argv[1]) {
-            windowThread = std::thread([&cam]() { cam.OpenWindow(); });
-        }
-
         auto angle = cam.GetIMUVector();
         float obstructionDistance = cam.GetObstructionDistance();
 
