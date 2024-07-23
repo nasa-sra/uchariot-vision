@@ -1,5 +1,5 @@
 
-#include "opencv2/videoio.hpp"
+#include <opencv2/videoio.hpp>
 #include <librealsense2/rs.hpp>
 #include <vector>
 #include <fstream>
@@ -11,49 +11,19 @@ public:
     ~Camera();
 
     void run();
-    void printPoses();
-    void runTest();
-    void saveData();
-    void destroyDetections();
 
-    zarray_t* getDetections() {
-        if (_detections != nullptr) {
-            return _detections;
-        }
-        return nullptr;
-    }
-
-    int getDetectionsSize() {
-        if (_detections != nullptr) {
-            return zarray_size(_detections);
-        }
-        return -1;
-    }
-
-    cv::Mat* getFrame() {
-        return &_frame;
-    }
-
-    std::vector<Pose> getPoses() {
-        return _poses;
-    }
-
-    void setYCrop(int yCrop = 150) {
-        _yCrop = yCrop;
-    }
+    cv::Mat* getFrame() { return &_frame; }
+    bool getDepthMap() { return _depthMap; }
+    void setDepthMap(bool in) { _depthMap = in; }
 
 private:
 
     void init();
-
-    zarray_t* _detections;
-    std::vector<Pose> _poses;
+    void loadConfig(rs2::device& dev, std::string configFile);
 
     cv::VideoCapture _cap;
 
     cv::Mat _frameRaw, _greyFrame, _frame;
-
-    std::string _testData;
 
     rs2::pipeline _pipe;
     rs2::align _align2Color;
@@ -66,9 +36,6 @@ private:
     rs2_extrinsics _depthExtrinsics;
 
     float _depthScale;
-
     bool _depthMap;
-
-    int _yCrop = 150;
 
 };

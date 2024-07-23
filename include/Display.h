@@ -1,8 +1,4 @@
 
-extern "C" {
-    #include "apriltag.h"
-}
-
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 #include <iostream>
@@ -11,24 +7,15 @@ extern "C" {
 class Display {
 public:
 
-    Display();
+    Display(int width, int height);
 
-    void drawDetections(zarray_t *detections);
     void showFrame();
     void saveFrame();
 
-    void setFrame(cv::Mat* frame) {
-        _frame = frame;
-    }
+    void setFrame(cv::Mat* frame) { _frame = frame; }
+    void setFps(float fps) { _fps = fps; }
 
-    void setDims(int width, int height) {
-        _width = width;
-        _height = height;
-    }
-
-    void setFps(float fps) {
-        _fps = fps;
-    }
+    bool isOpen() {return cv::getWindowProperty("Vision", 0) >= 0; } // doesn't actually work
 
 private:
 

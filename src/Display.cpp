@@ -1,14 +1,14 @@
 #include "Display.h"
 #include <iomanip>
 
-Display::Display() {
+Display::Display(int width, int height) {
 
     _frame = nullptr;
 
     _fps = 0.0;
 
-    _width = 0;
-    _height = 0;
+    _width = width;
+    _height = height;
 
     _imageIdx = 0;
     std::fstream idxFile;
@@ -19,40 +19,8 @@ Display::Display() {
     }
     idxFile.close();
 
-    cv::namedWindow("Tag Detections");
+    cv::namedWindow("Vision");
 
-}
-
-void Display::drawDetections(zarray_t *detections) {
-
-    for (int i = 0; i < zarray_size(detections); i++) {
-        apriltag_detection_t *det;
-        zarray_get(detections, i, &det);
-
-        cv::line(*_frame, cv::Point(det->p[0][0], det->p[0][1]),
-                    cv::Point(det->p[1][0], det->p[1][1]),
-                    cv::Scalar(0, 0xff, 0), 2);
-        cv::line(*_frame, cv::Point(det->p[0][0], det->p[0][1]),
-                    cv::Point(det->p[3][0], det->p[3][1]),
-                    cv::Scalar(0, 0, 0xff), 2);
-        cv::line(*_frame, cv::Point(det->p[1][0], det->p[1][1]),
-                    cv::Point(det->p[2][0], det->p[2][1]),
-                    cv::Scalar(0xff, 0, 0), 2);
-        cv::line(*_frame, cv::Point(det->p[2][0], det->p[2][1]),
-                    cv::Point(det->p[3][0], det->p[3][1]),
-                    cv::Scalar(0, 0, 0xff), 2);
-
-        std::stringstream ss;
-        ss << det->id;
-        std::string text = ss.str();
-        
-        int baseline;
-        cv::Size textsize = cv::getTextSize(text, fontface, fontscale, 2,
-                                        &baseline);
-        cv::putText(*_frame, text, cv::Point(det->c[0]-textsize.width/2,
-                                    det->c[1]+textsize.height/2),
-                fontface, fontscale, cv::Scalar(0xff, 0x99, 0), 2);
-    }
 }
 
 void Display::showFrame() {
@@ -67,7 +35,7 @@ void Display::showFrame() {
     cv::line(outFrame, cv::Point(_width / 2 - crossSize, _height / 2), cv::Point(_width / 2 + crossSize, _height / 2), cv::Scalar(0, 0, 0xff));
     cv::line(outFrame, cv::Point(_width / 2, _height / 2 - crossSize), cv::Point(_width / 2, _height / 2 + crossSize), cv::Scalar(0, 0, 0xff));
 
-    cv::imshow("Tag Detections", outFrame);
+    cv::imshow("Vision", outFrame);
 }
 
 void Display::saveFrame() {

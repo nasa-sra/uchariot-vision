@@ -10,27 +10,33 @@
 #include <string_view>
 
 #include <opencv2/opencv.hpp>
+#include <argparse/argparse.hpp>
 
+#include "Utils.h"
 #include "Display.h"
 #include "Camera.h"
 
 int main(int argc, char *argv[]) {
 
-    getopt_t* getopt = getopt_create();
+    argparse::ArgumentParser argparse("uChariotVision");
 
-    getopt_add_int(getopt, 's', "show", "1", "Show video stream");
+    argparse.add_argument("-d")
+        .help("Enables display window")
+        .flag();
 
-    if (!getopt_parse(getopt, argc, argv, 1)) {
-        printf("Usage: %s [options]\n", argv[0]);
-        getopt_do_usage(getopt);
-        exit(0);
+    try {
+        argparse.parse_args(argc, argv);
+    } catch (const std::exception& err) {
+        std::cerr << err.what() << std::endl;
+        std::cerr << argparse;
+        std::exit(1);
     }
 
-    if (getopt_get_int(getopt, "show") == 1) {
-        display = new Display();
+    Display* display = nullptr;
+    if (argparse["-d"] == true) {
+        display = new Display(640, 480);
     }
 
-    Display display(640, 480);
     Camera cam;
 
     cv::TickMeter timer;
@@ -39,122 +45,33 @@ int main(int argc, char *argv[]) {
     double sum = 0.0;
     const int fpsDisplay = 10;
 
-    bool logging = false;
-    std::string log = "";
-    bool takeMean = false;
-    int meanCounter;
-    Point meanPos;
-
-    int heartbeat = 0;
-
-    while (true) {
+    while (display != nullptr && display->isOpen()) {
         timer.start();
 
-        detector->run();
-        if (detector->getDetectionsSize() > 0) {
-            locator->run(detector->getPoses(), 0.0);
-        }
-
-        if (ntCam->GetBoolean("feedback", false)) {
-            detector->setYCrop(0);
-        } else {
-            detector->setYCrop();
-        }
+        cam.run();
 
         int k = cv::pollKey();
+        k -= 1048576; // I don't know why
         
         if (k == 27) { // esc
             break;
         }
 
         switch (k) {
-            case ' ':
-                detector->printPoses();
-                break;
-            case 'r':
-                detector->runTest();
-                break;
-            case 'o':
-                detector->saveData();
-                break;
-            case 't':
-                locator->print();
-                break;
             case 's':
-                if(display != nullptr) display->saveFrame();
+                display->saveFrame();
                 break;
-            case 'l':
-                if (!logging) {
-                    logging = true;
-                    std::cout << "Started logging\n";
-                } else {
-                    std::ofstream logFile;
-                    logFile.open("log.csv", std::ios_base::app);
-                    logFile << "FPS, Detections, PosX, PosY\n";
-                    logFile << log;
-                    logFile.close();
-                    std::cout << "Saved log\n";
-                }
+            case 'd':
+                {bool op = cam.getDepthMap();
+                Utils::LogFmt("Setting Depth Map %i", op);
+                cam.setDepthMap(!op);}
                 break;
-            case 'm':
-                if (takeMean) {
-                    takeMean = false;
-                    meanPos /= meanCounter;
-                    std::cout << "Mean Pos - ";
-                    meanPos.print();
-                } else {
-                    meanPos = {0, 0};
-                    meanCounter = 0;
-                    takeMean = true;
-                    std::cout << "Taking mean\n";
-                }
-                
-                break;
-            default:
-                break;
+            default: break;
         }
-
-        if (locator->newPos()) {
-
-            if (takeMean) {
-                meanPos += locator->getPos();;
-                meanCounter++;
-            }
-
-            Point pos = locator->getPos();
-            Pose tag = locator->getTagPose();
-            ntCam->PutNumber("z", tag.getZin());
-            ntCam->PutNumber("x", tag.getXin());
-            ntCam->PutNumber("xPos", pos.x);
-            ntCam->PutNumber("yPos", pos.y);
-            ntCam->PutNumber("angle", tag.getAngle());
-            ntCam->PutNumber("distance", tag.getDistance() * 39.3701);
-            ntCam->PutBoolean("valid", true);
-            ntCam->PutBoolean("stero", tag.getStero());
-	        ntCam->PutNumber("id", tag.getId());
-	        ntCam->PutNumber("heartbeat", heartbeat);
-            inst.Flush();
-
-	        heartbeat++;
-
-            if (logging) {
-                log += std::to_string(fps) + ", " + 
-                std::to_string(detector->getDetectionsSize()) + ", " + 
-                std::to_string(pos.x) + ", " + 
-                std::to_string(pos.y) + "\n";
-            }
-        }
-
+        
         if (display != nullptr) {
-            display->setFrame(detector->getFrame());
-            display->drawDetections(detector->getDetections());
+            display->setFrame(cam.getFrame());
         }
-
-        if (stream != nullptr) {
-            stream->writeFrame(detector->getFrame());
-        }
-
-        detector->destroyDetections();
 
         timer.stop();
 
@@ -162,15 +79,13 @@ int main(int argc, char *argv[]) {
         every++;
         if (every == fpsDisplay) {
             fps = fpsDisplay / sum;
-            if (display != nullptr) {display->setFps(fps);}
+            if (display != nullptr) display->setFps(fps);
             every = 0;
             sum = 0.0;
         }
 
         if (display != nullptr) {
-
             display->showFrame();
-
         } else if (every == 0) {
             std::cout << "FPS: " << std::fixed << std::setprecision(1) << fps << std::endl;
         }
