@@ -21,9 +21,7 @@ private:
     void init();
     void loadConfig(rs2::device& dev, std::string configFile);
 
-    cv::VideoCapture _cap;
-
-    cv::Mat _frameRaw, _greyFrame, _frame;
+    cv::Mat _frameRaw, _frame;
 
     rs2::pipeline _pipe;
     rs2::align _align2Color;
@@ -36,6 +34,7 @@ private:
     rs2_extrinsics _depthExtrinsics;
 
     float _depthScale;
-    bool _depthMap;
+    bool _depthMap{false};
+    cv::Mat _depthData;
 
 };

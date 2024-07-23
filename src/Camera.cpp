@@ -11,9 +11,8 @@
 Camera::Camera() : 
         _frame(), 
         _frameRaw(), 
-        _greyFrame(), 
-        _cap(), 
-        _align2Color(RS2_STREAM_INFRARED)
+        _align2Color(RS2_STREAM_COLOR),
+        _depthData()
     {
 
     Utils::LogFmt("Enabling video capture");
@@ -49,7 +48,6 @@ void Camera::init() {
 	Utils::LogFmt("Realsense device found: %s", dev.get_description().c_str());
 
     std::string serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
-    Utils::LogFmt("Configuring camera : %s", serial);
 
     std::string json_file_name = "rsConfig.json";
     if (std::filesystem::exists(json_file_name)) {
@@ -59,8 +57,6 @@ void Camera::init() {
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_COLOR);
     cfg.enable_stream(RS2_STREAM_DEPTH);
-    cfg.enable_stream(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
-    cfg.enable_stream(RS2_STREAM_GYRO, RS2_FORMAT_MOTION_XYZ32F);
     cfg.enable_device(serial);
     rs2::pipeline_profile pipeProfile = _pipe.start(cfg);
 
@@ -90,12 +86,9 @@ void Camera::run() {
         // rs2::frame irFrame = data.get_infrared_frame();
         rs2::frame colorFrame = data.get_color_frame();
         rs2::depth_frame depthFrame = data.get_depth_frame();
+        rs2::depth_frame alignedDepthFrame = _align2Color.process(depthFrame).as<rs2::depth_frame>();
+        _depthData = cv::Mat(cv::Size(alignedDepthFrame.as<rs2::video_frame>().get_width(), alignedDepthFrame.as<rs2::video_frame>().get_height()), CV_32FC1, (void*)alignedDepthFrame.get_data(), cv::Mat::AUTO_STEP);
 
-        // rs2::frameset processed = _align2ir.process(data);
-        // rs2::depth_frame alignedDepthFrame = processed.get_depth_frame();
-
-        // int irWidth = irFrame.as<rs2::video_frame>().get_width();
-        // int irHeight = irFrame.as<rs2::video_frame>().get_height();
         int width = colorFrame.as<rs2::video_frame>().get_width();
         int height = colorFrame.as<rs2::video_frame>().get_height();
 
@@ -105,38 +98,6 @@ void Camera::run() {
             rs2::frame depthFrameColor = _colorMap.colorize(depthFrame);
             _frame = cv::Mat(cv::Size(depthFrameColor.as<rs2::video_frame>().get_width(), depthFrameColor.as<rs2::video_frame>().get_height()), CV_8UC3, (void*)depthFrameColor.get_data(), cv::Mat::AUTO_STEP);
         }
-
-        // // _greyFrame = cv::Mat(cv::Size(irWidth, irHeight), CV_8UC1, (void*)irFrame.get_data(), cv::Mat::AUTO_STEP);
-        // _frameRaw = cv::Mat(cv::Size(irWidth, irHeight), CV_8UC1, (void*) irFrame.get_data(), cv::Mat::AUTO_STEP);
-        // // cv::cvtColor(_frameRaw, _greyFrame, cv::COLOR_BGR2GRAY);
-        // // cv::cvtColor(_frameRaw, _greyFrame, cv::COLOR_BGR2GRAY);
-        // _greyFrame = cv::Mat(_frameRaw, cv::Rect(0, _yCrop, irWidth, irHeight - (_yCrop * 2)));
-
-        // // rs2::frame depthFrameColor;
-        // // if (_depthMap) {
-        // //     depthFrameColor = rs2::frame(depthFrame);
-        // //     depthFrameColor.apply_filter(_colorMap);
-        // //     _frame = cv::Mat(cv::Size(depthFrameColor.as<rs2::video_frame>().get_width(), depthFrameColor.as<rs2::video_frame>().get_height()), CV_8UC3, (void*)depthFrameColor.get_data(), cv::Mat::AUTO_STEP);
-        // // } else {
-        // cv::Mat frameMono = cv::Mat(cv::Size(irWidth, irHeight), CV_8UC1);
-        // _frameRaw(cv::Rect(0, _yCrop, irWidth, irHeight - (_yCrop * 2))).copyTo(frameMono(cv::Rect(0, _yCrop, irWidth, irHeight - (_yCrop * 2))));
-        // cv::cvtColor(frameMono, _frame, cv::COLOR_GRAY2BGR);
-        
-            // _frame = cv::Mat(_frameRaw, cv::Rect(0, YFILTER, colorWidth, colorHeight - (YFILTER * 2)));
-
-            // cv::cvtColor(_greyFrame, _frame, cv::COLOR_GRAY2BGR);
-            // cv::cvtColor(_frameRaw, _frame, cv::COLOR_RGB2BGR);
-        // }
-
-            // if (_rotation != 0) {
-    //     _cap >> _frameRaw;
-    //     cv::rotate(_frameRaw, _frame, _rotation - 1);
-    // } else {
-    //     _cap >> _frame;
-    // }
-
-    // cvtColor(_frame, _greyFrame, cv::COLOR_BGR2GRAY);
-
 
     } catch (const rs2::error & e) {
         std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;

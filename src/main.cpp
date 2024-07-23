@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
                 break;
             case 'd':
                 {bool op = cam.getDepthMap();
-                Utils::LogFmt("Setting Depth Map %i", op);
+                Utils::LogFmt("Setting Depth Map %s", op ? "Off" : "On");
                 cam.setDepthMap(!op);}
                 break;
             default: break;

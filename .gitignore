@@ -1,5 +1,6 @@
 /build
 /pibuild
+/crossbuild
 /.vscode
 /.idea
 **/__pycache__/
