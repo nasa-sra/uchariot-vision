@@ -15,10 +15,10 @@ public:
     void run();
 
     cv::Mat getFrame() { return _frame; }
+    cv::Mat getDepthMap() {return _depthData;}
     bool getColorDepthMap() { return _depthMap; }
     void setColorDepthMap(bool in) { _depthMap = in; }
 
-    float getDistance(int x, int y);
 
     cv::Size depthDims;
 

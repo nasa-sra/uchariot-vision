@@ -54,15 +54,17 @@ int main(int argc, char *argv[]) {
 
         cam.run();
 
+        cv::Mat depthMap = cam.getDepthMap();
         float closest = 1e6;
-        for (int row = 0; row < cam.depthDims.height - 4; row += 4) {
-            for (int col = 0; col < cam.depthDims.width - 4; col += 4) {
-                float pixel = cam.getDistance(row, col);
+        for (int row = 0; row < depthMap.rows - 4; row += 4) {
+            for (int col = 0; col < depthMap.cols - 4; col += 4) {
+                float pixel = depthMap.at<float>(row, col);
                 if (pixel > 0 && pixel < closest) {
                     closest = pixel;
                 }
             }
         }
+        std::cout << closest << std::endl;
 
         int k = cv::pollKey();
         k -= 1048576; // I don't know why
