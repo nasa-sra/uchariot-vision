@@ -1,8 +1,10 @@
 
 #include <opencv2/videoio.hpp>
-#include <librealsense2/rs.hpp>
 #include <vector>
 #include <fstream>
+
+#include <librealsense2/rs_advanced_mode.hpp>
+#include <librealsense2/rs.hpp>
 
 class Camera {
 public:
@@ -36,5 +38,7 @@ private:
     float _depthScale;
     bool _depthMap{false};
     cv::Mat _depthData;
+
+    cv::VideoCapture* _simCam{nullptr};
 
 };

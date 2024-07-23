@@ -4,7 +4,6 @@
 #include "Utils.h"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
-#include <librealsense2/rs_advanced_mode.hpp>
 
 #include "Camera.h"
 
@@ -65,7 +64,6 @@ void Camera::init() {
 }
 
 void Camera::loadConfig(rs2::device& dev, std::string configFile) {
-
     auto advanced_mode_dev = dev.as<rs400::advanced_mode>();
     // Check if advanced-mode is enabled to pass the custom config
     if (!advanced_mode_dev.is_enabled()) {

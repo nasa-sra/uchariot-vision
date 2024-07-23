@@ -14,7 +14,12 @@
 
 #include "Utils.h"
 #include "Display.h"
+
+#ifndef SIMULATION
 #include "Camera.h"
+#else
+#include "SimCamera.h"
+#endif
 
 int main(int argc, char *argv[]) {
 
@@ -33,11 +38,15 @@ int main(int argc, char *argv[]) {
     }
 
     Display* display = nullptr;
-    if (argparse["-d"] == true) {
+    if (argparse.get<bool>("-d")) {
         display = new Display(640, 480);
     }
 
+#ifndef SIMULATION
     Camera cam;
+#else
+    SimCamera cam("test.mp4");
+#endif
 
     cv::TickMeter timer;
     float fps = 0.0;
