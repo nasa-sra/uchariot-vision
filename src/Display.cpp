@@ -1,9 +1,7 @@
 #include "Display.h"
 #include <iomanip>
 
-Display::Display(int width, int height) {
-
-    _frame = nullptr;
+Display::Display(int width, int height) : _frame() {
 
     _fps = 0.0;
 
@@ -25,7 +23,7 @@ Display::Display(int width, int height) {
 
 void Display::showFrame() {
     cv::Mat outFrame;
-    cv::resize(*_frame, outFrame, cv::Size(_width, _height));
+    cv::resize(_frame, outFrame, cv::Size(_width, _height));
 
     std::stringstream fpsText; 
     fpsText << "FPS: " << std::fixed << std::setprecision(1) << _fps;
@@ -40,7 +38,7 @@ void Display::showFrame() {
 
 void Display::saveFrame() {
     std::string imageName = "./images/image" + std::to_string(_imageIdx) + ".jpg";
-    cv::imwrite(imageName, *_frame);
+    cv::imwrite(imageName, _frame);
     std::cout << "Saved image to " << imageName << std::endl;
     _imageIdx++;
 

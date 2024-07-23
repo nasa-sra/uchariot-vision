@@ -1,11 +1,6 @@
 #include <iostream>
 #include <string>
-#include <fcntl.h>
 #include <errno.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/mman.h>
 #include <fstream>
 #include <string_view>
 
@@ -54,10 +49,20 @@ int main(int argc, char *argv[]) {
     double sum = 0.0;
     const int fpsDisplay = 10;
 
-    while (display != nullptr && display->isOpen()) {
+    while (true) {
         timer.start();
 
         cam.run();
+
+        float closest = 1e6;
+        for (int row = 0; row < cam.depthDims.height - 4; row += 4) {
+            for (int col = 0; col < cam.depthDims.width - 4; col += 4) {
+                float pixel = cam.getDistance(row, col);
+                if (pixel > 0 && pixel < closest) {
+                    closest = pixel;
+                }
+            }
+        }
 
         int k = cv::pollKey();
         k -= 1048576; // I don't know why
@@ -71,9 +76,9 @@ int main(int argc, char *argv[]) {
                 display->saveFrame();
                 break;
             case 'd':
-                {bool op = cam.getDepthMap();
+                {bool op = cam.getColorDepthMap();
                 Utils::LogFmt("Setting Depth Map %s", op ? "Off" : "On");
-                cam.setDepthMap(!op);}
+                cam.setColorDepthMap(!op);}
                 break;
             default: break;
         }

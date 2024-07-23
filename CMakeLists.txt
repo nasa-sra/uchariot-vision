@@ -12,8 +12,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(SRCS 
     src/main.cpp
     src/Utils.cpp
-    # src/RotationEstimator.cpp
-    # src/Realsense.cpp
     src/Pipe.cpp
     src/SimCamera.cpp
     src/Display.cpp
@@ -24,14 +22,14 @@ find_package( OpenCV REQUIRED )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 set(LIBS Eigen3::Eigen ${OpenCV_LIBS})
 
-if (NOT ${SIMULATION})
+if (${SIMULATION})
+    message("Compiling for simulation")
+    add_compile_definitions(SIMULATION=true)
+else()
     list(APPEND SRCS src/Camera.cpp)
 
     find_package(realsense2 REQUIRED)
     list(APPEND LIBS ${realsense2_LIBRARY})
-else()
-    message("Compiling for simulation")
-    add_compile_definitions(SIMULATION=true)
 endif()
 
 add_executable(uChariotVision ${SRCS})

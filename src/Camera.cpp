@@ -84,8 +84,12 @@ void Camera::run() {
         // rs2::frame irFrame = data.get_infrared_frame();
         rs2::frame colorFrame = data.get_color_frame();
         rs2::depth_frame depthFrame = data.get_depth_frame();
-        rs2::depth_frame alignedDepthFrame = _align2Color.process(depthFrame).as<rs2::depth_frame>();
-        _depthData = cv::Mat(cv::Size(alignedDepthFrame.as<rs2::video_frame>().get_width(), alignedDepthFrame.as<rs2::video_frame>().get_height()), CV_32FC1, (void*)alignedDepthFrame.get_data(), cv::Mat::AUTO_STEP);
+        // rs2::depth_frame alignedDepthFrame = _align2Color.process(depthFrame).as<rs2::depth_frame>();
+        depthDims = cv::Size(depthFrame.as<rs2::video_frame>().get_width(), depthFrame.as<rs2::video_frame>().get_height());
+        _depthScale = depthFrame.get_units();
+
+        // _depthData = cv::Mat(depthDims, CV_32FC1, (void*)alignedDepthFrame.get_data(), cv::Mat::AUTO_STEP);
+        _depthData = cv::Mat(depthDims, CV_16UC1, (void*) depthFrame.get_data(), cv::Mat::AUTO_STEP);
 
         int width = colorFrame.as<rs2::video_frame>().get_width();
         int height = colorFrame.as<rs2::video_frame>().get_height();
@@ -100,4 +104,8 @@ void Camera::run() {
     } catch (const rs2::error & e) {
         std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
     }
+}
+
+float Camera::getDistance(int x, int y) {
+    return _depthData.at<uint16_t>(x, y) * _depthScale;
 }

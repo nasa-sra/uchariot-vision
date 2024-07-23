@@ -14,9 +14,13 @@ public:
 
     void run();
 
-    cv::Mat* getFrame() { return &_frame; }
-    bool getDepthMap() { return _depthMap; }
-    void setDepthMap(bool in) { _depthMap = in; }
+    cv::Mat getFrame() { return _frame; }
+    bool getColorDepthMap() { return _depthMap; }
+    void setColorDepthMap(bool in) { _depthMap = in; }
+
+    float getDistance(int x, int y);
+
+    cv::Size depthDims;
 
 private:
 
