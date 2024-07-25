@@ -10,6 +10,7 @@
 #include "Utils.h"
 #include "Display.h"
 #include "Detector.h"
+#include "MessageQueue.h"
 
 #ifndef SIMULATION
 #include "Camera.h"
@@ -51,6 +52,8 @@ int main(int argc, char *argv[]) {
     const int fpsDisplay = 10;
 
     ClosestDetector closestDetector(&cam);
+
+    MessageQueue messageQueue("tmp/rs");
 
     while (true) {
         timer.start();

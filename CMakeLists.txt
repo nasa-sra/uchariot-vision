@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(SRCS 
     src/main.cpp
     src/Utils.cpp
-    src/Pipe.cpp
+    src/MessageQueue.cpp
     src/SimCamera.cpp
     src/Display.cpp
     src/Detector.cpp

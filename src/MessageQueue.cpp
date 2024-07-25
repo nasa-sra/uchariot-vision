@@ -1,25 +1,24 @@
-#include "Pipe.h"
+#include "MessageQueue.h"
 
-Pipe::Pipe(const std::string& name) {
-    this->name = name.c_str();
-}
-
-void Pipe::Write(std::string data) {
-    key_t key; 
-    int msgid; 
+MessageQueue::MessageQueue(const std::string& name) {
+    this->_name = name.c_str();
 
     // ftok to generate unique key 
-    key = ftok(name, 65); 
+    _key = ftok(_name, 65); 
 
     // msgget creates a message queue 
     // and returns identifier 
-    msgid = msgget(key, 0666 | IPC_CREAT); 
+    _msgid = msgget(_key, 0666 | IPC_CREAT); 
+}
+
+void MessageQueue::Write(std::string data) {
+    
     _msg._type = 1; 
 
     strcpy(_msg._content, data.c_str()); 
 
     // msgsnd to send message 
-    msgsnd(msgid, &_msg, sizeof(_msg), 0); 
+    msgsnd(_msgid, &_msg, sizeof(_msg), 0); 
 
     // display the message 
     // printf("Data send is : %s \n", _msg._content); 
