@@ -8,9 +8,7 @@
 #include "SimCamera.h"
 
 SimCamera::SimCamera(std::string fileName) : 
-        _frame(), 
-        _frameRaw(), 
-        _depthData(),
+        CameraBase(),
         _cap(fileName)
     {
 

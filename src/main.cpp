@@ -9,6 +9,7 @@
 
 #include "Utils.h"
 #include "Display.h"
+#include "Detector.h"
 
 #ifndef SIMULATION
 #include "Camera.h"
@@ -49,25 +50,28 @@ int main(int argc, char *argv[]) {
     double sum = 0.0;
     const int fpsDisplay = 10;
 
+    ClosestDetector closestDetector(&cam);
+
     while (true) {
         timer.start();
 
         cam.run();
+        cv::Mat frame = cam.getFrame();
 
-        cv::Mat depthMap = cam.getDepthMap();
-        float closest = 1e6;
-        for (int row = 0; row < depthMap.rows - 4; row += 4) {
-            for (int col = 0; col < depthMap.cols - 4; col += 4) {
-                float pixel = depthMap.at<float>(row, col);
-                if (pixel > 0 && pixel < closest) {
-                    closest = pixel;
-                }
-            }
+        std::vector<Detection> detections;
+        std::vector<Detection> closestDetections = closestDetector.run();
+        detections.insert(detections.end(), closestDetections.begin(), closestDetections.end());
+
+        for (Detection& det : detections) {
+            std::cout << det.name << ": " << det.pos.x() << ", " << det.pos.y() << ", " << det.pos.z() << std::endl;
+            cv::circle(frame, cv::Point(det.pixelX, det.pixelY), 10, cv::Scalar(255, 255, 255), 5);
+            putText(frame, det.name, cv::Point2i(det.pixelX-15, det.pixelY-10), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 3);
         }
-        std::cout << closest << std::endl;
 
         int k = cv::pollKey();
-        k -= 1048576; // I don't know why
+        // k -= 1048576; // I don't know why
+        if (k != -1)
+        std::cout << k << std::endl;
         
         if (k == 27) { // esc
             break;
@@ -111,43 +115,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
-// #include "Realsense.h"
-// #include "Pipe.h"
-// #include "Utils.h"
-// #include <unistd.h>
-// #include <thread>
-
-// // #define TEST
-// #define VERBOSE
-
-// int main(int argc, char** argv) {
-
-// #ifndef TEST
-//     Realsense cam;
-// #endif
-//     Pipe pipe("/tmp/rs_heading");
-
-// 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	
-// 	cam.TareIMU(cam.GetIMU());
-
-//     while (1)
-//     {
-
-// #ifndef TEST
-//         auto angle = cam.GetIMU();
-
-//     #ifdef VERBOSE
-//         Utils::LogFmt("(%f, %f, %f)", angle.x, angle.y, angle.z);
-//     #endif
-//         pipe.Write(std::to_string(angle.y));
-//         cam.Update();
-// #else
-//         pipe.Write(std::to_string(3.14));
-// #endif
-
-//     }
-// }
-
-
