@@ -1,29 +1,31 @@
 #pragma once
 
-#include <opencv2/opencv.hpp>
+#include
 #include <Eigen/Core>
+#include "rapidjson/document.h"
 
 #include "Camera.h"
 
-struct Detection {
+struct Detection
+{
     Eigen::Vector3d pos;
     std::string name;
     int pixelX, pixelY;
 };
 
-class Detector {
+class Detector
+{
 public:
-    Detector(CameraBase* camera);
+    Detector(CameraBase *camera);
     virtual std::vector<Detection> run() = 0;
 
 protected:
-
-    CameraBase* _camera;
-
+    CameraBase *_camera;
 };
 
-class ClosestDetector : public Detector {
+class ClosestDetector : public Detector
+{
 public:
-    ClosestDetector(CameraBase* camera) : Detector(camera) {}
-    std::vector<Detection> run();
+    ClosestDetector(CameraBase *camera) : Detector(camera) {}
+    std::vector<Detection> run(rapidjson::Document *doc);
 };
