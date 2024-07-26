@@ -1,8 +1,7 @@
 #pragma once
 
-#include
+#include <opencv2/opencv.hpp>
 #include <Eigen/Core>
-#include "rapidjson/document.h"
 
 #include "Camera.h"
 
@@ -17,7 +16,7 @@ class Detector
 {
 public:
     Detector(CameraBase *camera);
-    virtual std::vector<Detection> run(rapidjson::Document *doc) = 0;
+    virtual std::vector<Detection> run() = 0;
 
 protected:
     CameraBase *_camera;
@@ -27,5 +26,5 @@ class ClosestDetector : public Detector
 {
 public:
     ClosestDetector(CameraBase *camera) : Detector(camera) {}
-    std::vector<Detection> run(rapidjson::Document *doc);
+    std::vector<Detection> run();
 };
