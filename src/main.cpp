@@ -71,11 +71,8 @@ int main(int argc, char *argv[])
         cam.run();
         cv::Mat frame = cam.getFrame();
 
-        rapidjson::Document *doc;
-        doc->SetObject();
-
         std::vector<Detection> detections;
-        std::vector<Detection> closestDetections = closestDetector.run(&doc);
+        std::vector<Detection> closestDetections = closestDetector.run();
         detections.insert(detections.end(), closestDetections.begin(), closestDetections.end());
 
         for (Detection &det : detections)
@@ -84,16 +81,6 @@ int main(int argc, char *argv[])
             cv::circle(frame, cv::Point(det.pixelX, det.pixelY), 10, cv::Scalar(255, 255, 255), 5);
             putText(frame, det.name, cv::Point2i(det.pixelX - 15, det.pixelY - 10), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 3);
         }
-
-        rapidjson::StringBuffer strbuf;
-
-        strbuf.Clear();
-
-        rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
-
-        _doc.Accept(writer);
-
-        messageQueue.Write(strbuf.GetString());
 
         int k = cv::pollKey();
         // k -= 1048576; // I don't know why
