@@ -17,7 +17,7 @@ class Detector
 {
 public:
     Detector(CameraBase *camera);
-    virtual std::vector<Detection> run() = 0;
+    virtual std::vector<Detection> run(rapidjson::Document *doc) = 0;
 
 protected:
     CameraBase *_camera;
