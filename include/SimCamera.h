@@ -3,7 +3,7 @@
 #include <vector>
 #include <fstream>
 
-#include "Camera.h"
+#include "CameraBase.h"
 
 class SimCamera : public CameraBase {
 public:

@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 
     ClosestDetector closestDetector(&cam);
 
-    MessageQueue messageQueue("tmp/rs");
+    MessageQueue messageQueue("/tmp/uchariotVision");
 
     while (true)
     {
@@ -71,29 +71,25 @@ int main(int argc, char *argv[])
         cam.run();
         cv::Mat frame = cam.getFrame();
 
-        rapidjson::Document *doc;
-        doc->SetObject();
-
         std::vector<Detection> detections;
-        std::vector<Detection> closestDetections = closestDetector.run(&doc);
-        detections.insert(detections.end(), closestDetections.begin(), closestDetections.end());
+        // std::vector<Detection> closestDetections = closestDetector.run();
+        // detections.insert(detections.end(), closestDetections.begin(), closestDetections.end());
+        Detection det;
+        det.name = "closest";
+        det.pos = Eigen::Vector3d(2.0, 1.0, 3.5);
+        detections.push_back(det);
 
-        for (Detection &det : detections)
-        {
+        std::string json = "{\"detections\": [";
+        for (Detection &det : detections) {
             std::cout << det.name << ": " << det.pos.x() << ", " << det.pos.y() << ", " << det.pos.z() << std::endl;
             cv::circle(frame, cv::Point(det.pixelX, det.pixelY), 10, cv::Scalar(255, 255, 255), 5);
             putText(frame, det.name, cv::Point2i(det.pixelX - 15, det.pixelY - 10), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 3);
+            json += det.toJsonStr() + ",";
         }
+        json = json.substr(0, json.size()-1);
+        json += "]}";
 
-        rapidjson::StringBuffer strbuf;
-
-        strbuf.Clear();
-
-        rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
-
-        _doc.Accept(writer);
-
-        messageQueue.Write(strbuf.GetString());
+        messageQueue.Write(json);
 
         int k = cv::pollKey();
         // k -= 1048576; // I don't know why
