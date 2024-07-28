@@ -7,10 +7,6 @@
 #include <opencv2/opencv.hpp>
 #include <argparse/argparse.hpp>
 
-#include "rapidjson/document.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
-
 #include "Utils.h"
 #include "Display.h"
 #include "Detector.h"
@@ -72,14 +68,10 @@ int main(int argc, char *argv[])
         cv::Mat frame = cam.getFrame();
 
         std::vector<Detection> detections;
-        // std::vector<Detection> closestDetections = closestDetector.run();
-        // detections.insert(detections.end(), closestDetections.begin(), closestDetections.end());
-        Detection det;
-        det.name = "closest";
-        det.pos = Eigen::Vector3d(2.0, 1.0, 3.5);
-        detections.push_back(det);
+        std::vector<Detection> closestDetections = closestDetector.run();
+        detections.insert(detections.end(), closestDetections.begin(), closestDetections.end());
 
-        std::string json = "{\"detections\": [";
+        std::string json = "{\"detections\":[";
         for (Detection &det : detections) {
             std::cout << det.name << ": " << det.pos.x() << ", " << det.pos.y() << ", " << det.pos.z() << std::endl;
             cv::circle(frame, cv::Point(det.pixelX, det.pixelY), 10, cv::Scalar(255, 255, 255), 5);

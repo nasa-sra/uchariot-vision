@@ -22,17 +22,19 @@ void MessageQueue::Write(std::string data) {
 
     struct msqid_ds ms_data;
     msgctl(_msgid, IPC_STAT, &ms_data);
-    if (ms_data.msg_qnum > 4) {
-        // clear buffer
-        char buf[2560];
-        for (int i = 0; i < ms_data.msg_qnum; i++) {
-            int bytes = msgrcv(_msgid, &buf, sizeof(buf), 1, IPC_NOWAIT);
-            if (bytes == -1) {
-                Utils::LogFmt("MessageQueue::Write - Error flushing -  %s", strerror(errno));
-            }
-            // std::cout << "Flushed " << bytes << "bytes\n";
-        }
-    }
+    // if (ms_data.msg_qnum > 4) {
+    //     // clear buffer
+    //     char buf[2560];
+    //     for (int i = 0; i < ms_data.msg_qnum; i++) {
+    //         int bytes = msgrcv(_msgid, &buf, sizeof(buf), 1, IPC_NOWAIT);
+    //         if (bytes == -1) {
+    //             Utils::LogFmt("MessageQueue::Write - Error flushing -  %s", strerror(errno));
+    //         }
+    //         // std::cout << "Flushed " << bytes << "bytes\n";
+    //     }
+    // }
+
+    if (ms_data.msg_qnum > 4) return;
 
     // fill send buffer
     long msgType = 1; 
