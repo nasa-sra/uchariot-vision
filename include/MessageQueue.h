@@ -9,22 +9,14 @@
 
 #include "Utils.h"
 
-struct MsgBuffer
-{
-    long _type;
-    char _content[16];
-};
-
-class MessageQueue
-{
-
+class MessageQueue {
 public:
     MessageQueue(const std::string &name);
+    ~MessageQueue();
     void Write(std::string data);
 
 private:
     key_t _key;
     const char *_name;
-    MsgBuffer _msg;
     int _msgid;
 };

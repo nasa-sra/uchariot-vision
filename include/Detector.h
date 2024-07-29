@@ -1,16 +1,9 @@
 #pragma once
 
-#include <opencv2/opencv.hpp>
 #include <Eigen/Core>
 
-#include "Camera.h"
-
-struct Detection
-{
-    Eigen::Vector3d pos;
-    std::string name;
-    int pixelX, pixelY;
-};
+#include "CameraBase.h"
+#include "Detection.h"
 
 class Detector
 {

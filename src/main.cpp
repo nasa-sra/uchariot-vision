@@ -7,10 +7,6 @@
 #include <opencv2/opencv.hpp>
 #include <argparse/argparse.hpp>
 
-#include "rapidjson/document.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
-
 #include "Utils.h"
 #include "Display.h"
 #include "Detector.h"
@@ -62,7 +58,7 @@ int main(int argc, char *argv[])
 
     ClosestDetector closestDetector(&cam);
 
-    MessageQueue messageQueue("tmp/rs");
+    MessageQueue messageQueue("/tmp/uchariotVision");
 
     while (true)
     {
@@ -75,12 +71,17 @@ int main(int argc, char *argv[])
         std::vector<Detection> closestDetections = closestDetector.run();
         detections.insert(detections.end(), closestDetections.begin(), closestDetections.end());
 
-        for (Detection &det : detections)
-        {
+        std::string json = "{\"detections\":[";
+        for (Detection &det : detections) {
             std::cout << det.name << ": " << det.pos.x() << ", " << det.pos.y() << ", " << det.pos.z() << std::endl;
             cv::circle(frame, cv::Point(det.pixelX, det.pixelY), 10, cv::Scalar(255, 255, 255), 5);
             putText(frame, det.name, cv::Point2i(det.pixelX - 15, det.pixelY - 10), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 3);
+            json += det.toJsonStr() + ",";
         }
+        json = json.substr(0, json.size()-1);
+        json += "]}";
+
+        messageQueue.Write(json);
 
         int k = cv::pollKey();
         // k -= 1048576; // I don't know why

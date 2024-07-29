@@ -9,8 +9,8 @@ std::vector<Detection> ClosestDetector::run() {
     cv::Mat colorFrame = _camera->getFrame();
     cv::Mat depthFrame = _camera->getDepthMap();
 
-    cv::Mat decimatedDepthFrame;
-    cv::resize(depthFrame, decimatedDepthFrame, cv::Size(), 0.25, 0.25);
+    // cv::Mat decimatedDepthFrame;
+    // cv::resize(depthFrame, decimatedDepthFrame, cv::Size(), 0.25, 0.25);
 
     float closest = 1e6;
     int x, y;
