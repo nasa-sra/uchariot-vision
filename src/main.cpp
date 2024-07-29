@@ -57,6 +57,7 @@ int main(int argc, char *argv[])
     const int fpsDisplay = 10;
 
     ClosestDetector closestDetector(&cam);
+    ObjectDetector objectDetector(&cam, "../models/model.tflite", "../models/labels.txt");
 
     MessageQueue messageQueue("/tmp/uchariotVision");
 
@@ -68,8 +69,7 @@ int main(int argc, char *argv[])
         cv::Mat frame = cam.getFrame();
 
         std::vector<Detection> detections;
-        std::vector<Detection> closestDetections = closestDetector.run();
-        detections.insert(detections.end(), closestDetections.begin(), closestDetections.end());
+        closestDetector.run(detections);
 
         std::string json = "{\"detections\":[";
         for (Detection &det : detections) {
