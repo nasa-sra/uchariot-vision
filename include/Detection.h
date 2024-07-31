@@ -16,6 +16,9 @@ public:
 
 class ObjectDetection : public Detection {
 public:
-    float x1, y1, x2, y2; // corners
-    float score;
+    // float x1, y1, x2, y2; // corners
+    // float score;
+    int class_id;
+    float confidence;
+    cv::Rect box;
 };

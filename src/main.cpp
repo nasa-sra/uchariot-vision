@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     const int fpsDisplay = 10;
 
     ClosestDetector closestDetector(&cam);
-    ObjectDetector objectDetector(&cam, "../models/model.tflite", "../models/labels.txt");
+    ObjectDetector objectDetector(&cam, "../models/yolov5n.onnx", "../models/classes.txt");
 
     MessageQueue messageQueue("/tmp/uchariotVision");
 
@@ -80,6 +80,8 @@ int main(int argc, char *argv[])
         }
         json = json.substr(0, json.size()-1);
         json += "]}";
+
+        
 
         messageQueue.Write(json);
 

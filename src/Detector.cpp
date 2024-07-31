@@ -1,24 +1,25 @@
-
 #include "Detector.h"
 
-Detector::Detector(CameraBase *camera) {
+Detector::Detector(CameraBase *camera)
+{
     _camera = camera;
 }
 
-std::vector<Detection> ClosestDetector::run(std::vector<Detection>& detections) {
+std::vector<Detection> ClosestDetector::run(std::vector<Detection> &detections)
+{
 
     cv::Mat colorFrame = _camera->getFrame();
     cv::Mat depthFrame = _camera->getDepthMap();
 
-    // cv::Mat decimatedDepthFrame;
-    // cv::resize(depthFrame, decimatedDepthFrame, cv::Size(), 0.25, 0.25);
-
     float closest = 1e6;
     int x, y;
-    for (int row = 1; row < depthFrame.rows / 2; row++) {
-        for (int col = 1; col < depthFrame.cols; col++) {
+    for (int row = 1; row < depthFrame.rows / 2; row++)
+    {
+        for (int col = 1; col < depthFrame.cols; col++)
+        {
             float pixel = depthFrame.at<float>(row, col);
-            if (pixel > 0 && pixel < closest) {
+            if (pixel > 0 && pixel < closest)
+            {
                 closest = pixel;
                 x = col;
                 y = row;
@@ -37,83 +38,125 @@ std::vector<Detection> ClosestDetector::run(std::vector<Detection>& detections) 
     return detections;
 }
 
-ObjectDetector::ObjectDetector(CameraBase *camera, std::string modelPath, std::string labelPath) : Detector(camera) {
-
-    Utils::LogFmt("Creating detector with %s", modelPath);
-
-    _model = tflite::FlatBufferModel::BuildFromFile(modelPath.c_str());
-
-    tflite::ops::builtin::BuiltinOpResolver resolver;
-    tflite::InterpreterBuilder(*_model.get(), resolver)(&_interpreter);
-    if (tflite::InterpreterBuilder(*_model.get(), resolver)(&_interpreter) != kTfLiteOk) {
-        throw std::runtime_error("Detector::Detector - Failed to build interpreter");
+std::vector<std::string> load_class_list(std::string labelPath)
+{
+    std::vector<std::string> class_list;
+    std::ifstream ifs(labelPath);
+    std::string line;
+    while (getline(ifs, line))
+    {
+        class_list.push_back(line);
     }
-    if (_interpreter->AllocateTensors() != kTfLiteOk) {
-        throw std::runtime_error("Detector::Detector - Failed to allocate tensors");
-    }
-    _interpreter->SetNumThreads(3);
-    _interpreter->SetAllowFp16PrecisionForFp32(true);
-
-	if(!readFileContents(labelsPath, _labels)) {
-        throw std::runtime_error("Detector::Detector - Could not load labels file");
-	}
+    return class_list;
 }
 
-void ObjectDetector::run(std::vector<Detection>& detections) {
+// maybe not do this because it creates a square image and we probably want to train 640x480
+cv::Mat format_yolov5(const cv::Mat &source)
+{
+    int col = source.cols;
+    int row = source.rows;
+    int _max = MAX(col, row);
+    cv::Mat result = cv::Mat::zeros(_max, _max, CV_8UC3);
+    source.copyTo(result(cv::Rect(0, 0, col, row)));
+    return result;
+}
 
+ObjectDetector::ObjectDetector(CameraBase *camera, std::string modelPath, std::string labelPath, float CONFIDENCE_THRESHOLD) : Detector(camera)
+{
+    class_list = load_class_list(labelPath);
+
+    auto result = cv::dnn::readNet(modelPath);
+    std::cout << "Attempting to use CUDA\n";
+    result.setPreferableBackend(cv::dnn::DNN_BACKEND_CUDA);
+    result.setPreferableTarget(cv::dnn::DNN_TARGET_CUDA_FP16);
+
+    net = result;
+    confidenceThreshold = CONFIDENCE_THRESHOLD;
+}
+
+void ObjectDetector::run(std::vector<Detection> &detections)
+{
     cv::Mat colorFrame = _camera->getFrame();
     cv::Mat depthFrame = _camera->getDepthMap();
 
-    int cam_width = src.cols;
-    int cam_height = src.rows;
-
     cv::Mat image;
-    cv::resize(colorFrame, image, cv::Size(300,300));
-    memcpy(_interpreter->typed_input_tensor<uchar>(0), image.data, image.total() * image.elemSize());
+    cv::resize(colorFrame, image, cv::Size(300, 300));
 
-    // std::cout << "tensors size: " << _interpreter->tensors_size() << "\n";
-    // std::cout << "nodes size: " << _interpreter->nodes_size() << "\n";
-    // std::cout << "inputs: " << _interpreter->inputs().size() << "\n";
-    // std::cout << "input(0) name: " << _interpreter->GetInputName(0) << "\n";
-    // std::cout << "outputs: " << _interpreter->outputs().size() << "\n";
+    cv::Mat blob;
+    auto input_image = format_yolov5(image);
 
-    _interpreter->Invoke();
+    cv::dnn::blobFromImage(input_image, blob, 1. / 255., cv::Size(INPUT_WIDTH, INPUT_HEIGHT), cv::Scalar(), true, false);
+    net.setInput(blob);
+    std::vector<cv::Mat> outputs;
+    net.forward(outputs, net.getUnconnectedOutLayersNames());
 
-    const float* detection_locations = _interpreter->tensor(_interpreter->outputs()[0])->data.f;
-    const float* detection_classes=_interpreter->tensor(_interpreter->outputs()[1])->data.f;
-    const float* detection_scores = _interpreter->tensor(_interpreter->outputs()[2])->data.f;
-    const int num_detections = *_interpreter->tensor(_interpreter->outputs()[3])->data.f;
+    float x_factor = input_image.cols / INPUT_WIDTH;
+    float y_factor = input_image.rows / INPUT_HEIGHT;
 
-    //there are ALWAYS 10 detections no matter how many objects are detectable
+    float *data = (float *)outputs[0].data;
 
-    for (int i = 0; i < num_detections; i++) {
-        if (detection_scores[i] > _confidenceThresh){
-            int det_index = (int) detection_classes[i] + 1;
-            Detection d;
-            d.y1 = detection_locations[4*i] * colorFrame.rows;
-            d.x1 = detection_locations[4*i+1] * colorFrame.cols;
-            d.y2 = detection_locations[4*i+2] * colorFrame.rows;
-            d.x2 = detection_locations[4*i+3] * colorFrame.cols;
+    const int dimensions = 85;
+    const int rows = 25200;
 
-            d.score = detection_scores[i];
-            d.name = _labels[det_index].c_str();
-            d.x = (d.x2 - d.x1) / 2 + d.x1;
-            d.y = (d.y2 - d.y1) / 2 + d.y1;
-            d.pos = _camera->getCameraPoint(d.x, d.y);
-            detections.push_back(d);
+    std::vector<int> class_ids;
+    std::vector<float> confidences;
+    std::vector<cv::Rect> boxes;
+
+    for (int i = 0; i < rows; ++i)
+    {
+
+        float confidence = data[4];
+        if (confidence >= confidenceThreshold)
+        {
+            float *classes_scores = data + 5;
+            cv::Mat scores(1, class_list.size(), CV_32FC1, classes_scores);
+            cv::Point class_id;
+            double max_class_score;
+            minMaxLoc(scores, 0, &max_class_score, 0, &class_id);
+            if (max_class_score > SCORE_THRESHOLD)
+            {
+
+                confidences.push_back(confidence);
+
+                class_ids.push_back(class_id.x);
+
+                float x = data[0];
+                float y = data[1];
+                float w = data[2];
+                float h = data[3];
+                int left = int((x - 0.5 * w) * x_factor);
+                int top = int((y - 0.5 * h) * y_factor);
+                int width = int(w * x_factor);
+                int height = int(h * y_factor);
+                boxes.push_back(cv::Rect(left, top, width, height));
+            }
         }
+
+        data += 85;
     }
-}
 
-bool Detector::readFileContents(std::string fileName, std::vector<std::string>& lines) {
-	std::ifstream in(fileName.c_str());
-	if(!in.is_open()) return false;
+    // non maxiumum supression
+    std::vector<int> nms_result;
+    cv::dnn::NMSBoxes(boxes, confidences, SCORE_THRESHOLD, NMS_THRESHOLD, nms_result);
+    for (int i = 0; i < nms_result.size(); i++)
+    {
+        int idx = nms_result[i];
+        ObjectDetection result;
+        result.class_id = class_ids[idx];
+        result.confidence = confidences[idx];
+        result.box = boxes[idx];
+        detections.push_back(result);
+    }
 
-	std::string str;
-	while (std::getline(in, str)) {
-		if(str.size() > 0)
-            lines.push_back(str);
-	}
-	in.close();
-	return true;
+    // for (int i = 0; i < numDetections; ++i)
+    // {
+    //     auto detection = detections[i];
+    //     auto box = detection.box;
+    //     auto classId = detection.class_id;
+    //     const auto color = colors[classId % colors.size()];
+    //     cv::rectangle(image, box, color, 3);
+
+    //     cv::rectangle(image, cv::Point(box.x, box.y - 20), cv::Point(box.x + box.width, box.y), color, cv::FILLED);
+    //     cv::putText(image, class_list[classId].c_str(), cv::Point(box.x, box.y - 5), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0));
+    // }
 }
