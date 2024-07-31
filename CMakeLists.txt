@@ -16,14 +16,13 @@ set(SRCS
     src/SimCamera.cpp
     src/Display.cpp
     src/Detector.cpp
+    src/Detection.cpp
 )
 
 set(LIBS)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package( OpenCV REQUIRED )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
-find_library(TFLITE_LIB libtensorflow-lite.a ) #PATHS /home/paul/tensorflow-2.6.0/tensorflow/lite/tools/make/gen/linux_x86_64/lib ) #${CMAKE_SYSROOT}/usr/local/lib/
-find_library(FLATBUFFERS_LIB libflatbuffers.a )
 set(LIBS Eigen3::Eigen ${OpenCV_LIBS} ${TFLITE_LIB} ${FLATBUFFERS_LIB})
 
 if (${SIMULATION})

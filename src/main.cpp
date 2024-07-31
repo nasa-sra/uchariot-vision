@@ -27,20 +27,28 @@ int main(int argc, char *argv[])
         .help("Enables display window")
         .flag();
 
-    try
-    {
+    argparse.add_argument("-c", "--confidence-theshold")
+        .default_value(0.4)
+        .help("Sets the confidence threshold");
+
+    argparse.add_argument("-s", "--score-theshold")
+        .default_value(0.2)
+        .help("Sets the score threshold");
+
+    argparse.add_argument("-n", "--nms-theshold")
+        .default_value(0.4)
+        .help("Sets the NMS threshold");
+
+    try {
         argparse.parse_args(argc, argv);
-    }
-    catch (const std::exception &err)
-    {
+    } catch (const std::exception &err) {
         std::cerr << err.what() << std::endl;
         std::cerr << argparse;
         std::exit(1);
     }
 
     Display *display = nullptr;
-    if (argparse.get<bool>("-d"))
-    {
+    if (argparse.get<bool>("-d")) {
         display = new Display(640, 480);
     }
 
@@ -57,7 +65,7 @@ int main(int argc, char *argv[])
     const int fpsDisplay = 10;
 
     ClosestDetector closestDetector(&cam);
-    ObjectDetector objectDetector(&cam, "../models/yolov5n.onnx", "../models/classes.txt");
+    ObjectDetector objectDetector(&cam, "../models/yolov5n.onnx", "../models/classes.txt", argparse.get<float>("-c"), argparse.get<float>("-s"), argparse.get<float>("-n"));
 
     MessageQueue messageQueue("/tmp/uchariotVision");
 
@@ -68,20 +76,18 @@ int main(int argc, char *argv[])
         cam.run();
         cv::Mat frame = cam.getFrame();
 
-        std::vector<Detection> detections;
+        std::vector<Detection*> detections;
         closestDetector.run(detections);
+        objectDetector.run(detections);
 
         std::string json = "{\"detections\":[";
-        for (Detection &det : detections) {
-            std::cout << det.name << ": " << det.pos.x() << ", " << det.pos.y() << ", " << det.pos.z() << std::endl;
-            cv::circle(frame, cv::Point(det.pixelX, det.pixelY), 10, cv::Scalar(255, 255, 255), 5);
-            putText(frame, det.name, cv::Point2i(det.pixelX - 15, det.pixelY - 10), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 3);
-            json += det.toJsonStr() + ",";
+        for (Detection* det : detections) {
+            std::cout << det->name << ": " << det->pos.x() << ", " << det->pos.y() << ", " << det->pos.z() << std::endl;
+            det->draw(frame);
+            json += det->toJsonStr() + ",";
         }
         json = json.substr(0, json.size()-1);
         json += "]}";
-
-        
 
         messageQueue.Write(json);
 

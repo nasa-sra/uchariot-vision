@@ -5,8 +5,7 @@ Detector::Detector(CameraBase *camera)
     _camera = camera;
 }
 
-std::vector<Detection> ClosestDetector::run(std::vector<Detection> &detections)
-{
+void ClosestDetector::run(std::vector<Detection*> &detections) {
 
     cv::Mat colorFrame = _camera->getFrame();
     cv::Mat depthFrame = _camera->getDepthMap();
@@ -27,15 +26,13 @@ std::vector<Detection> ClosestDetector::run(std::vector<Detection> &detections)
         }
     }
 
-    Detection det;
-    det.pos = _camera->getCameraPoint(x, y);
-    det.name = "closest";
-    det.x = x;
-    det.y = y;
+    Detection* det = new Detection();
+    det->pos = _camera->getCameraPoint(x, y);
+    det->name = "closest";
+    det->x = x;
+    det->y = y;
 
-    std::vector<Detection> detections;
     detections.push_back(det);
-    return detections;
 }
 
 std::vector<std::string> load_class_list(std::string labelPath)
@@ -61,20 +58,23 @@ cv::Mat format_yolov5(const cv::Mat &source)
     return result;
 }
 
-ObjectDetector::ObjectDetector(CameraBase *camera, std::string modelPath, std::string labelPath, float CONFIDENCE_THRESHOLD) : Detector(camera)
+ObjectDetector::ObjectDetector(CameraBase *camera, std::string modelPath, std::string labelPath, float confThresh, float scoreThresh, float NMSThresh) :
+    Detector(camera),
+    _confidence_threshold(confThresh),
+    _score_threshold(scoreThresh),
+    _NMS_threshold(NMSThresh)
 {
-    class_list = load_class_list(labelPath);
+    _labels = load_class_list(labelPath);
 
     auto result = cv::dnn::readNet(modelPath);
-    std::cout << "Attempting to use CUDA\n";
+    Utils::LogFmt("Attempting to use CUDA for object detector");
     result.setPreferableBackend(cv::dnn::DNN_BACKEND_CUDA);
     result.setPreferableTarget(cv::dnn::DNN_TARGET_CUDA_FP16);
 
-    net = result;
-    confidenceThreshold = CONFIDENCE_THRESHOLD;
+    _net = result;
 }
 
-void ObjectDetector::run(std::vector<Detection> &detections)
+void ObjectDetector::run(std::vector<Detection*> &detections)
 {
     cv::Mat colorFrame = _camera->getFrame();
     cv::Mat depthFrame = _camera->getDepthMap();
@@ -86,38 +86,33 @@ void ObjectDetector::run(std::vector<Detection> &detections)
     auto input_image = format_yolov5(image);
 
     cv::dnn::blobFromImage(input_image, blob, 1. / 255., cv::Size(INPUT_WIDTH, INPUT_HEIGHT), cv::Scalar(), true, false);
-    net.setInput(blob);
+    _net.setInput(blob);
     std::vector<cv::Mat> outputs;
-    net.forward(outputs, net.getUnconnectedOutLayersNames());
+    _net.forward(outputs, _net.getUnconnectedOutLayersNames());
 
     float x_factor = input_image.cols / INPUT_WIDTH;
     float y_factor = input_image.rows / INPUT_HEIGHT;
 
     float *data = (float *)outputs[0].data;
 
-    const int dimensions = 85;
-    const int rows = 25200;
+    const int OUTPUT_COLUMNS = 85;
+    const int OUTPUT_ROWS = 25200;
 
     std::vector<int> class_ids;
     std::vector<float> confidences;
     std::vector<cv::Rect> boxes;
 
-    for (int i = 0; i < rows; ++i)
-    {
-
+    for (int i = 0; i < OUTPUT_ROWS; ++i) {
         float confidence = data[4];
-        if (confidence >= confidenceThreshold)
-        {
-            float *classes_scores = data + 5;
-            cv::Mat scores(1, class_list.size(), CV_32FC1, classes_scores);
+        if (confidence >= _confidence_threshold) {
+            float* classes_scores = data + 5;
+            cv::Mat scores(1, _labels.size(), CV_32FC1, classes_scores);
             cv::Point class_id;
             double max_class_score;
-            minMaxLoc(scores, 0, &max_class_score, 0, &class_id);
-            if (max_class_score > SCORE_THRESHOLD)
-            {
+            cv::minMaxLoc(scores, 0, &max_class_score, 0, &class_id);
+            if (max_class_score > _score_threshold) {
 
                 confidences.push_back(confidence);
-
                 class_ids.push_back(class_id.x);
 
                 float x = data[0];
@@ -132,31 +127,21 @@ void ObjectDetector::run(std::vector<Detection> &detections)
             }
         }
 
-        data += 85;
+        data += OUTPUT_COLUMNS;
     }
 
     // non maxiumum supression
     std::vector<int> nms_result;
-    cv::dnn::NMSBoxes(boxes, confidences, SCORE_THRESHOLD, NMS_THRESHOLD, nms_result);
-    for (int i = 0; i < nms_result.size(); i++)
-    {
+    cv::dnn::NMSBoxes(boxes, confidences, _score_threshold, _NMS_threshold, nms_result);
+    for (int i = 0; i < nms_result.size(); i++) {
         int idx = nms_result[i];
-        ObjectDetection result;
-        result.class_id = class_ids[idx];
-        result.confidence = confidences[idx];
-        result.box = boxes[idx];
-        detections.push_back(result);
+        ObjectDetection* det = new ObjectDetection();
+        det->name = _labels[class_ids[idx]];
+        det->x = boxes[idx].x + boxes[idx].width / 2;
+        det->y = boxes[idx].y + boxes[idx].height / 2;
+        det->pos = _camera->getCameraPoint(det->x, det->y);
+        det->confidence = confidences[idx];
+        det->box = boxes[idx];
+        detections.push_back(det);
     }
-
-    // for (int i = 0; i < numDetections; ++i)
-    // {
-    //     auto detection = detections[i];
-    //     auto box = detection.box;
-    //     auto classId = detection.class_id;
-    //     const auto color = colors[classId % colors.size()];
-    //     cv::rectangle(image, box, color, 3);
-
-    //     cv::rectangle(image, cv::Point(box.x, box.y - 20), cv::Point(box.x + box.width, box.y), color, cv::FILLED);
-    //     cv::putText(image, class_list[classId].c_str(), cv::Point(box.x, box.y - 5), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0));
-    // }
 }
