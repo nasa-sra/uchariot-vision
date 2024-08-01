@@ -1,5 +1,10 @@
 #include "Detector.h"
 
+#define CUDA_WARN(XXX) \
+    do { if (XXX != cudaSuccess) std::cerr << "CUDA Error: " << \
+        cudaGetErrorString(XXX) << ", at line " << __LINE__ \
+        << std::endl; cudaDeviceSynchronize(); } while (0)
+
 Detector::Detector(CameraBase *camera)
 {
     _camera = camera;
@@ -47,101 +52,57 @@ std::vector<std::string> load_class_list(std::string labelPath)
     return class_list;
 }
 
-// maybe not do this because it creates a square image and we probably want to train 640x480
-cv::Mat format_yolov5(const cv::Mat &source)
-{
-    int col = source.cols;
-    int row = source.rows;
-    int _max = MAX(col, row);
-    cv::Mat result = cv::Mat::zeros(_max, _max, CV_8UC3);
-    source.copyTo(result(cv::Rect(0, 0, col, row)));
-    return result;
-}
-
-ObjectDetector::ObjectDetector(CameraBase *camera, std::string modelPath, std::string labelPath, float confThresh, float scoreThresh, float NMSThresh) :
+ObjectDetector::ObjectDetector(CameraBase *camera, std::string modelPath, std::string labelPath, float confThresh) :
     Detector(camera),
-    _confidence_threshold(confThresh),
-    _score_threshold(scoreThresh),
-    _NMS_threshold(NMSThresh)
+    _confidence_threshold(confThresh)
 {
-    _labels = load_class_list(labelPath);
+    _net = detectNet::Create();
+    // _net = detectNet::Create("", modelPath.c_str(), 0.0, labelPath.c_str(), "", confThresh, "input_0", "scores", "bbox");
+    _detections = new detectNet::Detection[_net->GetMaxDetections()];
+    CUDA_WARN(cudaMalloc((void**) &_cudaImage, INPUT_WIDTH * INPUT_HEIGHT * sizeof(uchar3)));
+	
+	if (_net == nullptr) {
+		Utils::LogFmt("detectnet:  failed to load detectNet model\n");
+	}
+ }
 
-    auto result = cv::dnn::readNet(modelPath);
-    Utils::LogFmt("Attempting to use CUDA for object detector");
-    result.setPreferableBackend(cv::dnn::DNN_BACKEND_CUDA);
-    result.setPreferableTarget(cv::dnn::DNN_TARGET_CUDA_FP16);
+ ObjectDetector::~ObjectDetector() {
+    SAFE_DELETE(_net);
+    delete[] _detections;
+    CUDA_WARN(cudaFree((void*)_cudaImage));
+ }
 
-    _net = result;
-}
-
-void ObjectDetector::run(std::vector<Detection*> &detections)
-{
+void ObjectDetector::run(std::vector<Detection*> &detections) {
     cv::Mat colorFrame = _camera->getFrame();
     cv::Mat depthFrame = _camera->getDepthMap();
 
-    // cv::Mat image;
-    // cv::resize(colorFrame, image, cv::Size(300, 300));
+    cv::Mat resizedImage = colorFrame;
+    cv::resize(colorFrame, resizedImage, cv::Size(INPUT_WIDTH, INPUT_HEIGHT));
 
-    cv::Mat blob;
-    auto input_image = format_yolov5(colorFrame);
+    float xFactor = colorFrame.cols / INPUT_WIDTH;
+    float yFactor = colorFrame.rows / INPUT_HEIGHT;
 
-    cv::dnn::blobFromImage(input_image, blob, 1. / 255., cv::Size(INPUT_WIDTH, INPUT_HEIGHT), cv::Scalar(), true, false);
-    _net.setInput(blob);
-    std::vector<cv::Mat> outputs;
-    _net.forward(outputs, _net.getUnconnectedOutLayersNames());
+    CUDA_WARN(cudaMemcpy(_cudaImage, resizedImage.data, INPUT_WIDTH * INPUT_HEIGHT * sizeof(uchar3), cudaMemcpyHostToDevice));
 
-    float x_factor = input_image.cols / INPUT_WIDTH;
-    float y_factor = input_image.rows / INPUT_HEIGHT;
+    int numDetections = _net->Detect(_cudaImage, INPUT_WIDTH, INPUT_HEIGHT, IMAGE_RGB8, _detections);
+    
+    if (numDetections > 0) {
+        Utils::LogFmt("%i objects detected", numDetections);
+        for(int n = 0; n < numDetections; n++ ) {
+            ObjectDetection* det = new ObjectDetection();
+            det->name = _net->GetClassDesc(_detections[n].ClassID);
 
-    float *data = (float *)outputs[0].data;
+            int left = int(_detections[n].Left * xFactor);
+            int right = int(_detections[n].Right * xFactor);
+            int top = int(_detections[n].Top * yFactor);
+            int bottom = int(_detections[n].Bottom * yFactor);
+            det->box = cv::Rect(left, top, right - left, bottom - top);
 
-    const int OUTPUT_COLUMNS = 85;
-    const int OUTPUT_ROWS = 25200;
-
-    std::vector<int> class_ids;
-    std::vector<float> confidences;
-    std::vector<cv::Rect> boxes;
-
-    for (int i = 0; i < OUTPUT_ROWS; ++i) {
-        float confidence = data[4];
-        if (confidence >= _confidence_threshold) {
-            float* classes_scores = data + 5;
-            cv::Mat scores(1, _labels.size(), CV_32FC1, classes_scores);
-            cv::Point class_id;
-            double max_class_score;
-            cv::minMaxLoc(scores, 0, &max_class_score, 0, &class_id);
-            if (max_class_score > _score_threshold) {
-
-                confidences.push_back(confidence);
-                class_ids.push_back(class_id.x);
-
-                float x = data[0];
-                float y = data[1];
-                float w = data[2];
-                float h = data[3];
-                int left = int((x - 0.5 * w) * x_factor);
-                int top = int((y - 0.5 * h) * y_factor);
-                int width = int(w * x_factor);
-                int height = int(h * y_factor);
-                boxes.push_back(cv::Rect(left, top, width, height));
-            }
+            det->x = det->box.x + det->box.width / 2;
+            det->y = det->box.y + det->box.height / 2;
+            det->pos = _camera->getCameraPoint(det->x, det->y);
+            det->confidence = _detections[n].Confidence;
+            detections.push_back(det);
         }
-
-        data += OUTPUT_COLUMNS;
-    }
-
-    // non maxiumum supression
-    std::vector<int> nms_result;
-    cv::dnn::NMSBoxes(boxes, confidences, _score_threshold, _NMS_threshold, nms_result);
-    for (int i = 0; i < nms_result.size(); i++) {
-        int idx = nms_result[i];
-        ObjectDetection* det = new ObjectDetection();
-        det->name = _labels[class_ids[idx]];
-        det->x = boxes[idx].x + boxes[idx].width / 2;
-        det->y = boxes[idx].y + boxes[idx].height / 2;
-        det->pos = _camera->getCameraPoint(det->x, det->y);
-        det->confidence = confidences[idx];
-        det->box = boxes[idx];
-        detections.push_back(det);
     }
 }
