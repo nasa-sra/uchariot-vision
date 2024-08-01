@@ -21,9 +21,9 @@ set(SRCS
 
 set(LIBS)
 find_package(Eigen3 CONFIG REQUIRED)
-find_package( OpenCV REQUIRED )
+find_package( OpenCV CONFIG REQUIRED )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
-set(LIBS Eigen3::Eigen ${OpenCV_LIBS} ${TFLITE_LIB} ${FLATBUFFERS_LIB})
+set(LIBS Eigen3::Eigen ${OpenCV_LIBS})
 
 if (${SIMULATION})
     message("Compiling for simulation")

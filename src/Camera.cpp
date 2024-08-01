@@ -114,7 +114,10 @@ void Camera::run() {
 Eigen::Vector3d Camera::getCameraPoint(int x, int y) {
     float point[3];
     float pixel[2] = {(float)x, (float)y};
-    Utils::LogFmt("POINT: %f, %f -- ", pixel[0], pixel[1]);
+    Utils::LogFmt("POINT: %f, %f ", pixel[0], pixel[1]);
+    if (x > _colorIntrinsics.width || x < 0 || y > _colorIntrinsics.height || y < 0) {
+        return {0.0, 0.0, 0.0};
+    }
     rs2_deproject_pixel_to_point(point, &_colorIntrinsics, pixel, _depthData.at<float>(y, x));
     return Eigen::Vector3d(point[0], point[1], point[2]);
 }

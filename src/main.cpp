@@ -27,18 +27,6 @@ int main(int argc, char *argv[])
         .help("Enables display window")
         .flag();
 
-    argparse.add_argument("-c", "--confidence-theshold")
-        .default_value(0.4)
-        .help("Sets the confidence threshold");
-
-    argparse.add_argument("-s", "--score-theshold")
-        .default_value(0.2)
-        .help("Sets the score threshold");
-
-    argparse.add_argument("-n", "--nms-theshold")
-        .default_value(0.4)
-        .help("Sets the NMS threshold");
-
     try {
         argparse.parse_args(argc, argv);
     } catch (const std::exception &err) {
@@ -65,7 +53,8 @@ int main(int argc, char *argv[])
     const int fpsDisplay = 10;
 
     ClosestDetector closestDetector(&cam);
-    ObjectDetector objectDetector(&cam, "../models/yolov5n.onnx", "../models/classes.txt", argparse.get<float>("-c"), argparse.get<float>("-s"), argparse.get<float>("-n"));
+    // ObjectDetector objectDetector(&cam, "../models/yolov5n.onnx", "../models/classes.txt", argparse.get<float>("-c"), argparse.get<float>("-s"), argparse.get<float>("-n"));
+    ObjectDetector objectDetector(&cam, "../models/yolov5n.onnx", "../models/classes.txt", 0.8, 0.2, 0.4);
 
     MessageQueue messageQueue("/tmp/uchariotVision");
 
@@ -85,6 +74,7 @@ int main(int argc, char *argv[])
             std::cout << det->name << ": " << det->pos.x() << ", " << det->pos.y() << ", " << det->pos.z() << std::endl;
             det->draw(frame);
             json += det->toJsonStr() + ",";
+            delete det;
         }
         json = json.substr(0, json.size()-1);
         json += "]}";

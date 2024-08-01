@@ -12,8 +12,8 @@ public:
     Eigen::Vector3d pos;
     int x, y; // center
 
-    void draw(cv::Mat frame);
-    std::string toJsonStr();
+    virtual void draw(cv::Mat frame);
+    virtual std::string toJsonStr();
 };
 
 class ObjectDetection : public Detection {
@@ -23,6 +23,6 @@ public:
     float confidence;
     cv::Rect box;
 
-    void draw(cv::Mat frame);
-    std::string toJsonStr();
+    void draw(cv::Mat frame) override;
+    std::string toJsonStr() override;
 };

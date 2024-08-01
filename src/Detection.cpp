@@ -13,10 +13,11 @@ std::string Detection::toJsonStr() {
 
 void ObjectDetection::draw(cv::Mat frame) {
     cv::rectangle(frame, box, drawColor, 3);
-    cv::putText(frame, name.c_str(), cv::Point(box.x, box.y - 5), cv::FONT_HERSHEY_SIMPLEX, 0.5, drawColor);
+    std::string label = name + " - " + std::to_string(int(confidence * 100) / 100.0);
+    cv::putText(frame, label.c_str() , cv::Point(box.x, box.y - 5), cv::FONT_HERSHEY_SIMPLEX, 0.7, drawColor, 2);
 }
 
 std::string ObjectDetection::toJsonStr() {
     std::string pre = Detection::toJsonStr();
-    return pre.substr(0, pre.size() - 1) + Utils::StrFmt("{\"confidence\":\"%s\"}", confidence);
+    return pre.substr(0, pre.size() - 1) + Utils::StrFmt(",\"confidence\":\"%f\"}", confidence);
 }

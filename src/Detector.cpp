@@ -79,11 +79,11 @@ void ObjectDetector::run(std::vector<Detection*> &detections)
     cv::Mat colorFrame = _camera->getFrame();
     cv::Mat depthFrame = _camera->getDepthMap();
 
-    cv::Mat image;
-    cv::resize(colorFrame, image, cv::Size(300, 300));
+    // cv::Mat image;
+    // cv::resize(colorFrame, image, cv::Size(300, 300));
 
     cv::Mat blob;
-    auto input_image = format_yolov5(image);
+    auto input_image = format_yolov5(colorFrame);
 
     cv::dnn::blobFromImage(input_image, blob, 1. / 255., cv::Size(INPUT_WIDTH, INPUT_HEIGHT), cv::Scalar(), true, false);
     _net.setInput(blob);
