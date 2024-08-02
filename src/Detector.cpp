@@ -56,8 +56,7 @@ ObjectDetector::ObjectDetector(CameraBase *camera, std::string modelPath, std::s
     Detector(camera),
     _confidence_threshold(confThresh)
 {
-    _net = detectNet::Create();
-    // _net = detectNet::Create("", modelPath.c_str(), 0.0, labelPath.c_str(), "", confThresh, "input_0", "scores", "bbox");
+    _net = detectNet::Create("", modelPath.c_str(), 0.0, labelPath.c_str(), "", confThresh, "input_0", "scores", "bbox");
     _detections = new detectNet::Detection[_net->GetMaxDetections()];
     CUDA_WARN(cudaMalloc((void**) &_cudaImage, INPUT_WIDTH * INPUT_HEIGHT * sizeof(uchar3)));
 	

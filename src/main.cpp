@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 
     ClosestDetector closestDetector(&cam);
     // ObjectDetector objectDetector(&cam, "../models/yolov5n.onnx", "../models/classes.txt", argparse.get<float>("-c"), argparse.get<float>("-s"), argparse.get<float>("-n"));
-    ObjectDetector objectDetector(&cam, "model path", "label path", 0.8);
+    ObjectDetector objectDetector(&cam,"../models/resnet34_peoplenet.onnx","../models/peoplenet_labels.txt",.8);
 
     MessageQueue messageQueue("/tmp/uchariotVision");
 

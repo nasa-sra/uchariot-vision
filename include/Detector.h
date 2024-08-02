@@ -36,8 +36,8 @@ private:
     detectNet::Detection* _detections {nullptr};
     uchar3* _cudaImage {nullptr};
 
-    const float INPUT_WIDTH = 300;
-    const float INPUT_HEIGHT = 300;
+    const float INPUT_WIDTH = 960;
+    const float INPUT_HEIGHT = 544;
     float _confidence_threshold;
     float _score_threshold;
     float _NMS_threshold;
