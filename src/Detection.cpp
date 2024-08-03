@@ -1,7 +1,7 @@
 
 #include "Detection.h"
 
-cv::Scalar drawColor(255, 255, 255);
+cv::Scalar drawColor(0, 255, 0);
 
 void Detection::draw(cv::Mat frame) {
     cv::circle(frame, cv::Point(x, y), 10, drawColor, 5);
@@ -19,5 +19,5 @@ void ObjectDetection::draw(cv::Mat frame) {
 
 std::string ObjectDetection::toJsonStr() {
     std::string pre = Detection::toJsonStr();
-    return pre.substr(0, pre.size() - 1) + Utils::StrFmt(",\"confidence\":\"%f\"}", confidence);
+    return pre.substr(0, pre.size() - 1) + Utils::StrFmt(",\"confidence\":%f,\"width\":%f,\"height\":%f}", confidence, width, height);
 }

@@ -32,7 +32,7 @@ void ClosestDetector::run(std::vector<Detection*> &detections) {
     }
 
     Detection* det = new Detection();
-    det->pos = _camera->getCameraPoint(x, y);
+    det->pos = _camera->getPointFromPixel(x, y);
     det->name = "closest";
     det->x = x;
     det->y = y;
@@ -62,7 +62,7 @@ ObjectDetector::ObjectDetector(CameraBase *camera, std::string modelPath, std::s
     CUDA_WARN(cudaMalloc((void**) &_cudaImage, INPUT_WIDTH * INPUT_HEIGHT * sizeof(uchar3)));
 	
 	if (_net == nullptr) {
-		Utils::LogFmt("detectnet:  failed to load detectNet model\n");
+		Utils::LogFmt("ObjectDetector: failed to load detectNet model\n");
 	}
  }
 
@@ -92,15 +92,21 @@ void ObjectDetector::run(std::vector<Detection*> &detections) {
             ObjectDetection* det = new ObjectDetection();
             det->name = _net->GetClassDesc(_detections[n].ClassID);
 
-            int left = int(_detections[n].Left * xFactor);
-            int right = int(_detections[n].Right * xFactor);
-            int top = int(_detections[n].Top * yFactor);
-            int bottom = int(_detections[n].Bottom * yFactor);
-            det->box = cv::Rect(left, top, right - left, bottom - top);
+            det->x1 = int(_detections[n].Left * xFactor);
+            det->x2 = int(_detections[n].Right * xFactor);
+            det->y1 = int(_detections[n].Top * yFactor);
+            det->y2 = int(_detections[n].Bottom * yFactor);
+            det->box = cv::Rect(det->x1, det->y1, det->x2 - det->x1, det->y2 - det->y1);
 
             det->x = det->box.x + det->box.width / 2;
             det->y = det->box.y + det->box.height / 2;
-            det->pos = _camera->getCameraPoint(det->x, det->y);
+            det->pos = _camera->getPointFromPixel(det->x, det->y);
+            Eigen::Vector3d topLeft = _camera->getPointFromPixel(det->x1, det->y1, det->pos.z());
+            Eigen::Vector3d bottomLeft = _camera->getPointFromPixel(det->x1, det->y2, det->pos.z());
+            Eigen::Vector3d bottomRight = _camera->getPointFromPixel(det->x2, det->y2, det->pos.z());
+            det->width = (bottomLeft - bottomRight).norm();
+            det->height = (topLeft - bottomLeft).norm();
+
             det->confidence = _detections[n].Confidence;
             detections.push_back(det);
         }

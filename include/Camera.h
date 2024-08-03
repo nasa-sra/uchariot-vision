@@ -15,7 +15,10 @@ public:
     ~Camera();
 
     void run();
-    Eigen::Vector3d getCameraPoint(int x, int y);
+
+    float getDepthAtPixel(int x, int y);
+    Eigen::Vector3d getPointFromPixel(int x, int y);
+    Eigen::Vector3d getPointFromPixel(int x, int y, float depth);
 
 private:
 

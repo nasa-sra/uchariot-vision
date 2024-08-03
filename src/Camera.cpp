@@ -111,13 +111,21 @@ void Camera::run() {
     }
 }
 
-Eigen::Vector3d Camera::getCameraPoint(int x, int y) {
+float Camera::getDepthAtPixel(int x, int y) {
+    return _depthData.at<float>(y, x);
+}
+
+Eigen::Vector3d Camera::getPointFromPixel(int x, int y) {
+    return getPointFromPixel(x, y, _depthData.at<float>(y, x));
+}
+
+Eigen::Vector3d Camera::getPointFromPixel(int x, int y, float depth) {
     float point[3];
     float pixel[2] = {(float)x, (float)y};
-    Utils::LogFmt("POINT: %f, %f ", pixel[0], pixel[1]);
     if (x > _colorIntrinsics.width || x < 0 || y > _colorIntrinsics.height || y < 0) {
+        Utils::LogFmt("Camera::getPointFromPixel - pixel (%f, %f) out of bounds ", pixel[0], pixel[1]);
         return {0.0, 0.0, 0.0};
     }
-    rs2_deproject_pixel_to_point(point, &_colorIntrinsics, pixel, _depthData.at<float>(y, x));
+    rs2_deproject_pixel_to_point(point, &_colorIntrinsics, pixel, depth);
     return Eigen::Vector3d(point[0], point[1], point[2]);
 }
