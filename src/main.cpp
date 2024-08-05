@@ -27,20 +27,19 @@ int main(int argc, char *argv[])
         .help("Enables display window")
         .flag();
 
-    try
-    {
+    double confidenceThresh = 0.5;
+    argparse.add_argument("-c").help("Sets the confidence threshold").store_into(confidenceThresh);
+
+    try {
         argparse.parse_args(argc, argv);
-    }
-    catch (const std::exception &err)
-    {
+    } catch (const std::exception &err) {
         std::cerr << err.what() << std::endl;
         std::cerr << argparse;
         std::exit(1);
     }
 
     Display *display = nullptr;
-    if (argparse.get<bool>("-d"))
-    {
+    if (argparse.get<bool>("-d")) {
         display = new Display(640, 480);
     }
 
@@ -57,6 +56,8 @@ int main(int argc, char *argv[])
     const int fpsDisplay = 10;
 
     ClosestDetector closestDetector(&cam);
+    // ObjectDetector objectDetector(&cam, "default");
+    ObjectDetector objectDetector(&cam, "../models/rocks-ssd-mobilenet.onnx", "../models/rocks-labels.txt", confidenceThresh);
 
     MessageQueue messageQueue("/tmp/uchariotVision");
 
@@ -67,16 +68,16 @@ int main(int argc, char *argv[])
         cam.run();
         cv::Mat frame = cam.getFrame();
 
-        std::vector<Detection> detections;
-        std::vector<Detection> closestDetections = closestDetector.run();
-        detections.insert(detections.end(), closestDetections.begin(), closestDetections.end());
+        std::vector<Detection*> detections;
+        closestDetector.run(detections);
+        objectDetector.run(detections);
 
         std::string json = "{\"detections\":[";
-        for (Detection &det : detections) {
-            std::cout << det.name << ": " << det.pos.x() << ", " << det.pos.y() << ", " << det.pos.z() << std::endl;
-            cv::circle(frame, cv::Point(det.pixelX, det.pixelY), 10, cv::Scalar(255, 255, 255), 5);
-            putText(frame, det.name, cv::Point2i(det.pixelX - 15, det.pixelY - 10), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 3);
-            json += det.toJsonStr() + ",";
+        for (Detection* det : detections) {
+            std::cout << det->name << ": " << det->pos.x() << ", " << det->pos.y() << ", " << det->pos.z() << std::endl;
+            det->draw(frame);
+            json += det->toJsonStr() + ",";
+            delete det;
         }
         json = json.substr(0, json.size()-1);
         json += "]}";
