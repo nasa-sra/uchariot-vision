@@ -27,6 +27,9 @@ int main(int argc, char *argv[])
         .help("Enables display window")
         .flag();
 
+    double confidenceThresh = 0.5;
+    argparse.add_argument("-c").help("Sets the confidence threshold").store_into(confidenceThresh);
+
     try {
         argparse.parse_args(argc, argv);
     } catch (const std::exception &err) {
@@ -53,8 +56,8 @@ int main(int argc, char *argv[])
     const int fpsDisplay = 10;
 
     ClosestDetector closestDetector(&cam);
-    // ObjectDetector objectDetector(&cam, "../models/yolov5n.onnx", "../models/classes.txt", argparse.get<float>("-c"), argparse.get<float>("-s"), argparse.get<float>("-n"));
-    ObjectDetector objectDetector(&cam, "model path", "label path", 0.8);
+    // ObjectDetector objectDetector(&cam, "default");
+    ObjectDetector objectDetector(&cam, "../models/rocks-ssd-mobilenet.onnx", "../models/rocks-labels.txt", confidenceThresh);
 
     MessageQueue messageQueue("/tmp/uchariotVision");
 

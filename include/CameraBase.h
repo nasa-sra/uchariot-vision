@@ -11,7 +11,10 @@ public:
 
     cv::Mat getFrame() { return _frame; }
     cv::Mat getDepthMap() {return _depthData;}
-    virtual Eigen::Vector3d getCameraPoint(int x, int y) {return {0.0, 0.0, 0.0};}
+
+    virtual float getDepthAtPixel(int x, int y) {return 0.0;};
+    virtual Eigen::Vector3d getPointFromPixel(int x, int y) {return {0.0, 0.0, 0.0};};
+    virtual Eigen::Vector3d getPointFromPixel(int x, int y, float depth) {return {0.0, 0.0, 0.0};};
 
     bool getColorDepthMap() { return _depthMap; }
     void setColorDepthMap(bool in) { _depthMap = in; }
