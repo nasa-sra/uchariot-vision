@@ -1,63 +1,34 @@
-# uchariot-base
+# uchariot-vision
 
-Vision control software for MicroChariot.
-
-To deploy the code to the robot, you can either crosscompile and deploy the executable, or clone the repo onto the remote computer and build it there.  
+Vision software for MicroChariot.
 
 ## Libraries
 
 | Name | Desc | Install |
 | --- | --- | --- |
 | libeigen3 | linear algebra | sudo apt install libeigen3-dev | 
-| wiringPi | peripheral interface | ??? |
-| rapidjson | json parsing | n/a |
-| nmea | gps parsing | n/a | 
+| OpenCV | computer vision | built version ?? |
+| librealsense | realsense camera API | built version ?? | 
+| Jetson Inference | DNN model execution | built version ??  | 
+| CUDA Framework | GPU Acceleration | version ?? included with jetpack | 
 
-## Crosscompiling
+## Deploy
 
-### Sysroot 
-
-To crosscompile for the raspberry pi, you first need to create a sysroot directory. The cmake points by default to `~/uchariot-sys/sysroot/`
-
-You can use the following command to copy the pi's lib and usr directories to the sysroot.
-
-`rsync -vR --progress -rl --delete-after --safe-links USERNAME@RPI_IP:/{lib,usr,opt/vc/lib} $HOME/uchariot-sys/sysroot`
-
-### Native Compiling (ARM-Linux or M-series Mac)
- 
->If you are using an M-series Mac, use a Linux VM (Ubuntu or Debian recomended) with UTM. This basically turns your computer into a ARM-Linux box so you can build without crosscompiling.
-
-Then to compile, run 
+Currently, to deploy to the robot you must copy it to the Jetson and compile it there in order to compile with CUDA.  
+Just run `./send.sh <IP_OF_JETSON>`  
+Then on the jetson in ~/uchariot-vision/build run
 ```
-mkdir build
-cd build
 cmake ..
-make
+make -j4
+./uChariotVision
 ```
+You can add the simulation option using `cmake -DSIMULATION=true ..` to run the application with a test video instead of a live camera feed.  
+If you are on VNC and wish to view the GUI, add the display flag with `./uChariotVision -d`. You can toggle to depth view by pressing d on the GUI.  
 
-### Crosscompiling (X86-Windows/Mac/Linux)
+## Application
 
-> If you are using X86 Windows, use WSL Debian or Ubuntu.
-> If you are using an Intel Mac, use a VM with Debian or Ubuntu.
+The vision application connects to a realsense camera, processes it to find various detections, and then pushes them to a UNIX message queue in JSON for consumption by the main robot application. Currently, it reports the location of the closest object in the depth map, and detections from an object detection model. 
 
-Then install the crosscompiling toolchain for aarch64, and run
+## Object Detection Models
 
-`sudo apt install g++-aarch64-linux-gnu`
-
-Then to crosscompile, run 
-```
-mkdir build
-cd build
-cmake -DCMAKE_TOOLCHAIN_FILE=../piToolchain.cmake ..
-make
-```
-
-The only difference is the inclusion of `-DCMAKE_TOOLCHAIN_FILE=../piToolchain.cmake`.
-
-> If you build without this flag on X86-Windows/Max/Linux then the project will run in simulation mode, with no connection to any peripherals like the CAN bus.
-
-### Deploy
-
-Now you schould have produced a binary called ` uChariotVision`. Deploy this using `../deploy.sh`.
-
-### Simulation
+There are two options for models, both of which are based on the MobileNet-SSD-v2 architecture. The default model used is trained on the COCO dataset and can be used to detect a variety of common objects, including people. The other model has been trained on the rocks from the JSC rockyard with this [dataset](https://universe.roboflow.com/nasarockyard/nasa-rockyard/) and is intended for obstacle avoidance. They are run with the [Jetson Inference library](https://github.com/dusty-nv/jetson-inference/tree/master) which uses TensorRT to run the model with GPU acceleration. To train new models, consult the Jetson Inference [guide](https://github.com/dusty-nv/jetson-inference/blob/master/docs/pytorch-ssd.md). Be advised that when a model is run for the first time, the application must convert the ONNX file to an engine file, which can take 5-10 minutes.
