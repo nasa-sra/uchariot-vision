@@ -66,8 +66,7 @@ int main(int argc, char *argv[])
 #endif
 
     NetworkConnection connection;
-    // connection.Connect("10.93.24.5", 9000);
-    connection.Connect("localhost", 9000);
+    connection.Connect("192.168.1.3", 9000);
 
     while (true) {
 
