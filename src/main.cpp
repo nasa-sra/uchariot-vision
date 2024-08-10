@@ -9,8 +9,12 @@
 
 #include "Utils.h"
 #include "Display.h"
+#include "NetworkConnection.h"
+
+#include "Detection.h"
+#ifndef LOCAL_SIM
 #include "Detector.h"
-#include "MessageQueue.h"
+#endif
 
 #ifndef SIMULATION
 #include "Camera.h"
@@ -55,24 +59,29 @@ int main(int argc, char *argv[])
     double sum = 0.0;
     const int fpsDisplay = 10;
 
+#ifndef LOCAL_SIM
     ClosestDetector closestDetector(&cam);
     // ObjectDetector objectDetector(&cam, "default");
     ObjectDetector objectDetector(&cam, "../models/rocks-ssd-mobilenet.onnx", "../models/rocks-labels.txt", confidenceThresh);
+#endif
 
-    MessageQueue messageQueue("/tmp/uchariotVision");
+    NetworkConnection connection;
+    // connection.Connect("10.93.24.5", 9000);
+    connection.Connect("localhost", 9000);
 
-    while (true)
-    {
+    while (true) {
+
         timer.start();
 
         cam.run();
         cv::Mat frame = cam.getFrame();
 
         std::vector<Detection*> detections;
+        std::string json = "{\"detections\":[";
+#ifndef LOCAL_SIM
         closestDetector.run(detections);
         objectDetector.run(detections);
 
-        std::string json = "{\"detections\":[";
         for (Detection* det : detections) {
             std::cout << det->name << ": " << det->pos.x() << ", " << det->pos.y() << ", " << det->pos.z() << std::endl;
             det->draw(frame);
@@ -80,9 +89,10 @@ int main(int argc, char *argv[])
             delete det;
         }
         json = json.substr(0, json.size()-1);
+#endif
         json += "]}";
 
-        messageQueue.Write(json);
+        connection.SendStr(json);
 
         int k = cv::pollKey();
         // k -= 1048576; // I don't know why
@@ -139,6 +149,8 @@ int main(int argc, char *argv[])
 
         timer.reset();
     }
+
+    connection.Close();
 
     return 0;
 }
