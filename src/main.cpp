@@ -61,12 +61,16 @@ int main(int argc, char *argv[])
 
 #ifndef LOCAL_SIM
     ClosestDetector closestDetector(&cam);
-    // ObjectDetector objectDetector(&cam, "default");
-    ObjectDetector objectDetector(&cam, "../models/rocks-ssd-mobilenet.onnx", "../models/rocks-labels.txt", confidenceThresh);
+    ObjectDetector objectDetector(&cam, "default", "", 0.0);
+    // ObjectDetector objectDetector(&cam, "../models/rocks-ssd-mobilenet.onnx", "../models/rocks-labels.txt", confidenceThresh);
 #endif
 
     NetworkConnection connection;
-    connection.Connect("192.168.1.3", 9000);
+#ifndef LOCAL_SIM
+    connection.Connect("192.168.1.4", 9000);
+#else
+    connection.Connect("localhost", 9000);
+#endif
 
     while (true) {
 
@@ -76,7 +80,7 @@ int main(int argc, char *argv[])
         cv::Mat frame = cam.getFrame();
 
         std::vector<Detection*> detections;
-        std::string json = "{\"detections\":[";
+        std::string json = "[vision_update]{\"detections\":[";
 #ifndef LOCAL_SIM
         closestDetector.run(detections);
         objectDetector.run(detections);
@@ -89,7 +93,7 @@ int main(int argc, char *argv[])
         }
         json = json.substr(0, json.size()-1);
 #endif
-        json += "]}";
+        json += "]};";
 
         connection.SendStr(json);
 

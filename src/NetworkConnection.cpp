@@ -22,7 +22,7 @@ bool NetworkConnection::Connect(const char* address, int port) {
   
     Utils::LogFmt("Connecting to %s:%i", address, port);
     if (connect(_socket, (struct sockaddr*) &serverAddress, sizeof(serverAddress)) == -1) {
-        Utils::LogFmt("NetworkConnection::Connect failed to connect");
+        Utils::LogFmt("NetworkConnection::Connect failed to connect to %s:%i", address, port);
         close(_socket);
         return false;
     }
