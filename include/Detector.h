@@ -2,10 +2,10 @@
 
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
-#include <jetson-inference/detectNet.h>
 
 #include "CameraBase.h"
 #include "Detection.h"
+#include "DetectModel.h"
 class Detector
 {
 public:
@@ -32,8 +32,8 @@ public:
     void run(std::vector<Detection*> &detections) override;
 
 private:
-    detectNet* _net {nullptr};
-    detectNet::Detection* _detections {nullptr};
+
+    DetectModel _detectModel;
     uchar3* _cudaImage {nullptr};
 
     const float INPUT_WIDTH = 300;

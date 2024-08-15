@@ -61,8 +61,8 @@ int main(int argc, char *argv[])
 
 #ifndef LOCAL_SIM
     ClosestDetector closestDetector(&cam);
-    ObjectDetector objectDetector(&cam, "default", "", 0.0);
-    // ObjectDetector objectDetector(&cam, "../models/rocks-ssd-mobilenet.onnx", "../models/rocks-labels.txt", confidenceThresh);
+    // ObjectDetector objectDetector(&cam, "default", "", 0.0);
+    ObjectDetector objectDetector(&cam, "../models/rocks-yolov8m.onnx", "../models/rocks-labels.txt", confidenceThresh);
 #endif
 
     NetworkConnection connection;

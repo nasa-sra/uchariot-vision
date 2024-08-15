@@ -17,6 +17,7 @@ set(SRCS
     src/SimCamera.cpp
     src/Display.cpp
     src/Detection.cpp
+    src/DetectModel.cpp
 )
 
 find_package(Eigen3 CONFIG REQUIRED)
