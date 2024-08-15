@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 
     NetworkConnection connection;
 #ifndef LOCAL_SIM
-    connection.Connect("192.168.1.4", 9000);
+    connection.Connect("192.168.1.5", 9000);
 #else
     connection.Connect("localhost", 9000);
 #endif
