@@ -7,10 +7,10 @@ Vision software for MicroChariot.
 | Name | Desc | Install |
 | --- | --- | --- |
 | libeigen3 | linear algebra | sudo apt install libeigen3-dev | 
-| OpenCV | computer vision | built version ?? |
-| librealsense | realsense camera API | built version ?? | 
-| Jetson Inference | DNN model execution | built version ??  | 
-| CUDA Framework | GPU Acceleration | version ?? included with jetpack | 
+| OpenCV | computer vision | custom built |
+| librealsense | realsense camera API | custom built | 
+| Jetson Inference | DNN model execution | custom built  | 
+| CUDA Framework | GPU Acceleration | included with jetpack | 
 
 ## Deploy
 
@@ -32,3 +32,5 @@ The vision application connects to a realsense camera, processes it to find vari
 ## Object Detection Models
 
 There are two options for models, both of which are based on the MobileNet-SSD-v2 architecture. The default model used is trained on the COCO dataset and can be used to detect a variety of common objects, including people. The other model has been trained on the rocks from the JSC rockyard with this [dataset](https://universe.roboflow.com/nasarockyard/nasa-rockyard/) and is intended for obstacle avoidance. They are run with the [Jetson Inference library](https://github.com/dusty-nv/jetson-inference/tree/master) which uses TensorRT to run the model with GPU acceleration. To train new models, consult the Jetson Inference [guide](https://github.com/dusty-nv/jetson-inference/blob/master/docs/pytorch-ssd.md). Be advised that when a model is run for the first time, the application must convert the ONNX file to an engine file, which can take 5-10 minutes.
+
+It may also be easier to train YOLO models, as given [here](https://wiki.seeedstudio.com/YOLOv8-TRT-Jetson/). There is a tensorRT-yolo branch to run YOLO models directly with tensorRT in progress. 
